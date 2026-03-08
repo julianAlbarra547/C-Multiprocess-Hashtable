@@ -4,7 +4,7 @@
 
 El dataset debe colocarse en:
 
-data/raw/dataset.csv
+data/raw/spotify_data.csv
 
 El archivo no se incluye en el repositorio porque supera 1GB.
 
@@ -12,7 +12,7 @@ El archivo no se incluye en el repositorio porque supera 1GB.
 
 Para pruebas usar:
 
-data/sample/sample.csv
+data/sample/spotify_data_sample.csv
 
 ## Índices
 
