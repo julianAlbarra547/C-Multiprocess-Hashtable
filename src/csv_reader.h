@@ -7,10 +7,10 @@ typedef struct row{
     short rank;
     char date[16];
     char artist[2048];
-    char url[64];
-    long streams;
+    char url[128];
+    long long streams;
     char album[512];
-    int duration;
+    double duration;
     char explicito[8];
 } Row;
 
