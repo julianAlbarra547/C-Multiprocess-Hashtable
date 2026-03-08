@@ -1,6 +1,6 @@
 ## Test Folder
 
-En esta carpeta se encuentran test realizados a las principales funciones del programa, cabe resaltar que gran parte de los test serán realizados con apoyo en la inteligencia artificial, debido a limitaciones de tiempo al desarrollar la actividad.
+En esta carpeta se encuentran test realizados a las principales funciones del programa, cabe resaltar que gran parte de los test han sido realizados con apoyo de la inteligencia artificial debido a limitaciones de tiempo al desarrollar la actividad.
 
 ## Archivos
 
