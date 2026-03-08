@@ -23,6 +23,12 @@ int extract_row(char *buffer, int start, int end, char *obj){
     
     int j = start;
     int pointer = 0;
+
+    if(buffer[start] == '"'){
+        j++;
+        start++;
+        end--;
+    }
             
     for( j, pointer ; j < end; j++, pointer++){
         obj[pointer] = buffer[j];
