@@ -149,7 +149,6 @@ Row *read_csv(FILE *file, long offset) {
 }
 
 void print_row(Row *row){
-    
     printf(
     "El registro tiene los siguientes datos: \nID: %i\nTitle: %s\nRank: %i\nDate: %s\nArtist: %s\nURL: %s\nStreams: %lli\nAlbum: %s\nDuration %lf\nExplicit: %s\n",
     row->id,
