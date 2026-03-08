@@ -18,5 +18,6 @@ FILE *open_csv(const char *filename);
 Row *read_csv(FILE *file, long offset);
 void print_row(Row *row);
 void close_csv(FILE *file);
+void skip_header(FILE *file);
 
 #endif

@@ -163,3 +163,8 @@ void print_csv(Row *row){
 void close_csv(FILE *file){
     fclose(file);
 }
+
+void skip_header(FILE *file){
+    char buffer[4096];
+    fgets(buffer, 4096, file);
+}
