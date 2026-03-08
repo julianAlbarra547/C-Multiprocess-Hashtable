@@ -23,6 +23,12 @@ int extract_row(char *buffer, int start, int end, char *obj){
     
     int j = start;
     int pointer = 0;
+
+    if(buffer[start] == '"'){
+        j++;
+        start++;
+        end--;
+    }
             
     for( j, pointer ; j < end; j++, pointer++){
         obj[pointer] = buffer[j];
@@ -119,7 +125,7 @@ Row *read_csv(FILE *file, long offset) {
         if(i == 6){
             char box[MAX_VALUE_IN_STREAMS];
             extract_row(buff, start_column, end_column, box);
-            row->streams = (long) atoi(box);
+            row->streams = (long long) atof(box);
         }
         
         if(i == 7){
@@ -129,7 +135,7 @@ Row *read_csv(FILE *file, long offset) {
         if(i == 8){
             char box[MAX_VALUE_IN_DURATION];
             extract_row(buff, start_column, end_column, box);
-            row->duration = atoi(box);
+            row->duration = atof(box);
         }
         
         if(i == 9){
@@ -142,10 +148,9 @@ Row *read_csv(FILE *file, long offset) {
     return row;
 }
 
-void print_csv(Row *row){
-    
+void print_row(Row *row){
     printf(
-    "El registro tiene los siguientes datos: \nID: %i\nTitle: %s\nRank: %i\nDate: %s\nArtist: %s\nURL: %s\nStreams: %i\nAlbum: %s\nDuration %i\nExplicit: %s\n",
+    "El registro tiene los siguientes datos: \nID: %i\nTitle: %s\nRank: %i\nDate: %s\nArtist: %s\nURL: %s\nStreams: %lli\nAlbum: %s\nDuration %lf\nExplicit: %s\n",
     row->id,
     row->title,
     row->rank,
