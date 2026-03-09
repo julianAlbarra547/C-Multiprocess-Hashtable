@@ -12,10 +12,10 @@ Abre la aplicacion `Terminal` en macOS.
 
 ### Paso 2. Entrar a la carpeta del proyecto
 
-Ejecuta este comando:
+Se descarga y en consola se ejecuta este comando:
 
 ```bash
-cd /Users/santiago/csv-ui-viewer
+cd /users/user/csv-ui-viewer
 ```
 
 Este paso es necesario para que el servidor se inicie en la carpeta correcta y pueda encontrar:
