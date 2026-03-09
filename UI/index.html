@@ -1,1 +1,114 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Visor de Datos CSV</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Explorador de Datos de Spotify</p>
+          <h1>Menu interactivo en CSV para canciones, artistas y actividad en rankings.</h1>
+          <p class="hero-copy">
+            Carga un CSV, busca en todo el conjunto de datos, filtra por valores
+            de columna, ordena campos numericos y revisa cualquier fila en
+            detalle.
+          </p>
+        </div>
+        <div class="hero-actions">
+          <button id="loadSampleBtn" class="button button-primary">
+            Cargar datos de ejemplo
+          </button>
+          <label class="button button-secondary file-button">
+            Subir CSV
+            <input id="fileInput" type="file" accept=".csv,text/csv" />
+          </label>
+        </div>
+      </header>
 
+      <main class="app-grid">
+        <aside class="panel controls-panel">
+          <h2>Menu</h2>
+
+          <label class="field">
+            <span>Buscar</span>
+            <input
+              id="searchInput"
+              type="search"
+              placeholder="titulo, artista, album..."
+            />
+          </label>
+
+          <label class="field">
+            <span>Columna para filtrar</span>
+            <select id="filterColumn">
+              <option value="">Todas las columnas</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span>Valor del filtro</span>
+            <input
+              id="filterValue"
+              type="text"
+              placeholder="Escribe un valor para coincidir"
+            />
+          </label>
+
+          <label class="field">
+            <span>Ordenar por</span>
+            <select id="sortColumn">
+              <option value="">Sin orden</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span>Direccion</span>
+            <select id="sortDirection">
+              <option value="asc">Ascendente</option>
+              <option value="desc">Descendente</option>
+            </select>
+          </label>
+
+          <div class="actions">
+            <button id="resetBtn" class="button button-secondary">Restablecer</button>
+          </div>
+
+          <section class="stats">
+            <h3>Resumen del dataset</h3>
+            <p id="statusText">No hay ningun dataset cargado.</p>
+            <dl id="statsList"></dl>
+          </section>
+        </aside>
+
+        <section class="panel table-panel">
+          <div class="table-header">
+            <div>
+              <h2>Filas</h2>
+              <p id="tableSummary">Carga un CSV para comenzar.</p>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table id="dataTable">
+              <thead></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+
+        <aside class="panel details-panel">
+          <h2>Detalles de la fila</h2>
+          <p id="detailsEmpty" class="details-empty">
+            Selecciona una fila para revisar todos sus campos.
+          </p>
+          <dl id="detailsList" class="details-list"></dl>
+        </aside>
+      </main>
+    </div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
