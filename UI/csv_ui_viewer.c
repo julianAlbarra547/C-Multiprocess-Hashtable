@@ -66,11 +66,11 @@ static int connect_fifos(FifoClient *client, const char *write_path, const char 
   int write_fd = open(write_path, O_WRONLY | O_NONBLOCK);
   if (write_fd < 0) {
     if (errno == ENXIO) {
-      printf("No reader on FIFO yet. Start the hash server first.\n");
+      printf("No hay lector en el FIFO actualmente. Ejecute el hash server primero.\n");
     } else if (errno == ENOENT) {
-      printf("Write FIFO does not exist. Create it with: mkfifo %s\n", write_path);
+      printf("FIFO de escritura no existente. Crearlo con: mkfifo %s\n", write_path);
     } else {
-      perror("open write FIFO");
+      perror("abrir escritura FIFO");
     }
     return 0;
   }
@@ -78,9 +78,9 @@ static int connect_fifos(FifoClient *client, const char *write_path, const char 
   int read_fd = open(read_path, O_RDONLY | O_NONBLOCK);
   if (read_fd < 0) {
     if (errno == ENOENT) {
-      printf("Read FIFO does not exist. Create it with: mkfifo %s\n", read_path);
+      printf("FIFO de lectura no existente. Crearlo con: mkfifo %s\n", read_path);
     } else {
-      perror("open read FIFO");
+      perror("abrir lectura FIFO");
     }
     close(write_fd);
     return 0;
@@ -109,7 +109,7 @@ static int connect_fifos(FifoClient *client, const char *write_path, const char 
 
 static void read_response(FifoClient *client) {
   if (!client || client->read_fd < 0) {
-    printf("No response channel.\n");
+    printf("No hubo respuesta del cliente.\n");
     return;
   }
 
@@ -123,11 +123,11 @@ static void read_response(FifoClient *client) {
 
   int ready = select(client->read_fd + 1, &read_set, NULL, NULL, &timeout);
   if (ready == 0) {
-    printf("No response (timeout).\n");
+    printf("No hubo respuesta (timeout).\n");
     return;
   }
   if (ready < 0) {
-    perror("select");
+    perror("seleccione");
     return;
   }
 
@@ -135,20 +135,20 @@ static void read_response(FifoClient *client) {
   ssize_t bytes = read(client->read_fd, buffer, sizeof(buffer) - 1);
   if (bytes <= 0) {
     if (bytes == 0) {
-      printf("Hash server closed the response FIFO.\n");
+      printf("Hash server cerro la llamada por FIFO.\n");
     } else {
-      perror("read");
+      perror("Lectura: ");
     }
     return;
   }
   buffer[bytes] = '\0';
-  printf("Response: %s", buffer);
+  printf("Respuesta: %s", buffer);
   if (buffer[bytes - 1] != '\n') printf("\n");
 }
 
 static void send_command(FifoClient *client, const char *command, const char *payload) {
   if (!client || !client->connected || !client->write_stream) {
-    printf("FIFO not connected.\n");
+    printf("FIFO no conectada.\n");
     return;
   }
   if (!command) return;
@@ -164,14 +164,14 @@ static void send_command(FifoClient *client, const char *command, const char *pa
 }
 
 static void print_menu(void) {
-  printf("\nCSV UI Console Menu\n");
-  printf("1) Connect to FIFOs\n");
-  printf("2) Load CSV (send path)\n");
-  printf("3) Search\n");
-  printf("4) Add register\n");
-  printf("5) Close FIFOs\n");
-  printf("0) Exit\n");
-  printf("Select option: ");
+  printf("\n Bienvenido! Seleccione una opcion:\n");
+  printf("1) Conectarse a los FIFOs\n");
+  printf("2) Cargar CSV (envie direccion)\n");
+  printf("3) Busqueda\n");
+  printf("4) Agregar registro\n");
+  printf("5) Cerrar FIFOs\n");
+  printf("0) Salir\n");
+  printf("Elegir opcion: ");
 }
 
 int main(void) {
@@ -189,13 +189,13 @@ int main(void) {
     switch (option) {
       case 1: {
         if (client.connected) {
-          printf("Already connected. Write FIFO: %s | Read FIFO: %s\n", client.write_path, client.read_path);
+          printf("Conexion previamente establecida. Escribir FIFO: %s | Leer FIFO: %s\n", client.write_path, client.read_path);
           break;
         }
         char write_path[INPUT_BUFFER_SIZE];
         char read_path[INPUT_BUFFER_SIZE];
-        prompt_line("FIFO to hash (default /tmp/csv_ui_to_hash): ", write_path, sizeof(write_path));
-        prompt_line("FIFO from hash (default /tmp/csv_hash_to_ui): ", read_path, sizeof(read_path));
+        prompt_line("FIFO hacia el hash (default /tmp/csv_ui_to_hash): ", write_path, sizeof(write_path));
+        prompt_line("FIFO desde el hash (default /tmp/csv_hash_to_ui): ", read_path, sizeof(read_path));
         if (write_path[0] == '\0') {
           strncpy(write_path, DEFAULT_FIFO_TO_HASH, sizeof(write_path) - 1);
           write_path[sizeof(write_path) - 1] = '\0';
@@ -205,47 +205,47 @@ int main(void) {
           read_path[sizeof(read_path) - 1] = '\0';
         }
         if (!connect_fifos(&client, write_path, read_path)) {
-          printf("Failed to connect to FIFOs.\n");
+          printf("Fallo al conectar los FIFOs.\n");
         } else {
-          printf("Connected. Write FIFO: %s | Read FIFO: %s\n", client.write_path, client.read_path);
+          printf("Conectado. Escribir FIFO: %s | Leer FIFO: %s\n", client.write_path, client.read_path);
         }
         break;
       }
       case 2: {
         char path[INPUT_BUFFER_SIZE];
-        prompt_line("CSV file path: ", path, sizeof(path));
+        prompt_line("Direccion del archivo CSV: ", path, sizeof(path));
         if (path[0] == '\0') {
-          printf("No path provided.\n");
+          printf("No se dio ninguna direccion.\n");
           break;
         }
-        send_command(&client, "LOAD", path);
+        send_command(&client, "CARGAR", path);
         break;
       }
       case 3: {
         char term[INPUT_BUFFER_SIZE];
-        prompt_line("Search term: ", term, sizeof(term));
-        send_command(&client, "SEARCH", term);
+        prompt_line("Buscar por termino: ", term, sizeof(term));
+        send_command(&client, "BUSCAR", term);
         break;
       }
       case 4: {
         char record[INPUT_BUFFER_SIZE];
-        prompt_line("CSV row (comma-separated): ", record, sizeof(record));
+        prompt_line("Columnas del CSV  (separadas por coma): ", record, sizeof(record));
         send_command(&client, "ADD", record);
         break;
       }
       case 5:
         if (!client.connected) {
-          printf("FIFOs not connected.\n");
+          printf("FIFOs no conectadas.\n");
         } else {
           close_fifos(&client);
-          printf("FIFOs closed.\n");
+          printf("FIFOs cerradas.\n");
         }
         break;
       case 0:
         if (client.connected) close_fifos(&client);
         return 0;
       default:
-        printf("Unknown option.\n");
+        printf("Opcion desconocida.\n");
         break;
     }
   }
