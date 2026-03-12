@@ -13,8 +13,9 @@ typedef struct hash_node{
     struct hash_node *next;
 } Hash_node;
 
-int hash(const char *title);
-int insert_node(Hash_node **hash_table, char *title, char *artist, long long offset);
+unsigned int hash(char *title);
+int create_hash_table(Hash_node **hash_table);
+int insert_node(Hash_node **hash_table, char *title, char *artist, long offset); 
 long search_node(Hash_node **table, char *title, char *artist);
 void build_index(const char *csv_path, Hash_node **table);
 void save_index(Hash_node **table, const char *idx_path);
