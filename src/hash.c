@@ -166,3 +166,99 @@ int build_index(const char *csv_path, Hash_node **table){
     close_csv(file);
     return 0;
 }
+
+int save_index(Hash_node **table, const char *idx_path){
+    FILE *file = fopen(idx_path, "wb");
+
+    if(file == NULL){
+        perror("Error al abrir el archivo de indice para escritura.\n");
+        return -1;
+    }
+
+    int r, size = HASH_TABLE_SIZE;
+    r = fwrite(&size, sizeof(size), 1, file);
+
+    if(r != 1){
+        perror("Error al escribir el tamaño de la tabla hash en el archivo de indice.\n");
+        fclose(file);
+        return -1;
+    }
+
+    for(int i= 0; i < HASH_TABLE_SIZE; i++){
+        int size_bucket = 0;
+        Hash_node *aux = table[i];
+        
+        while(aux != NULL){
+            size_bucket++;
+            aux = aux->next;
+        }
+        
+        fwrite(&size_bucket, sizeof(int), 1, file);
+        
+        aux = table[i];
+        
+        while(aux != NULL){
+            
+            fwrite(aux->title, sizeof(aux->title), 1, file);
+            fwrite(aux->artist, sizeof(aux->artist), 1, file);
+            fwrite(&aux->offset, sizeof(aux->offset), 1, file);
+            
+            aux = aux->next;
+        }
+    }
+    
+    fclose(file);
+
+    return 0;
+}
+
+int load_index(const char *idx_path, Hash_node **table){
+    FILE *file = fopen(idx_path, "rb");
+    
+    if(file == NULL){
+        perror("Error al abrir el archivo idx.\n");
+        return -1;
+    }
+
+    int verification_size;
+    
+    fread(&verification_size, sizeof(int), 1, file);
+    
+    if(verification_size != HASH_TABLE_SIZE){
+        perror("Error, tamaños desiguales en la creación del hash.");
+        fclose(file);
+        return -1;
+    }
+    
+    int amount_nodes;
+    
+    for(int i = 0; i < HASH_TABLE_SIZE; i++){
+        
+        fread(&amount_nodes, sizeof(int), 1, file);
+        
+        Hash_node *last = NULL;
+        
+        for(int j = 0; j < amount_nodes; j++){
+            
+            Hash_node *aux = malloc(sizeof(Hash_node));
+            fread(aux->title, sizeof(aux->title), 1, file);
+            fread(aux->artist, sizeof(aux->artist), 1, file);
+            fread(&aux->offset, sizeof(aux->offset), 1, file);
+            aux->next = NULL;
+            
+            if(j == 0){
+                table[i] = aux;
+                last = aux;
+                continue;
+            }
+            
+            last->next = aux;
+            last = aux;
+            
+        }
+        
+    }
+    
+    fclose(file);
+    return 0;
+}
