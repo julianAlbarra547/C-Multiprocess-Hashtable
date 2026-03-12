@@ -17,8 +17,8 @@ unsigned int hash(char *title);
 int create_hash_table(Hash_node **hash_table);
 int insert_node(Hash_node **hash_table, char *title, char *artist, long offset); 
 long search_node(Hash_node **table, char *title, char *artist);
-void build_index(const char *csv_path, Hash_node **table);
-void save_index(Hash_node **table, const char *idx_path);
-void load_index(const char *idx_path, Hash_node **table);
+int build_index(const char *csv_path, Hash_node **table);
+int save_index(Hash_node **table, const char *idx_path);
+int load_index(const char *idx_path, Hash_node **table);
 
 #endif

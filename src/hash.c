@@ -86,6 +86,7 @@ int insert_node(Hash_node **hash_table, char *title, char *artist, long offset){
         if(strcmp(nodo_indice->title, new_node->title) == 0 &&
            strcmp(nodo_indice->artist, new_node->artist) == 0
         ){
+            free(new_node);
             return 1;
         }
         
@@ -136,3 +137,32 @@ long search_node(Hash_node **table, char *title, char *artist){
     return -1;
 }
 
+int build_index(const char *csv_path, Hash_node **table){
+    FILE *file = open_csv(csv_path);
+    
+    if(file == NULL){
+        return -1;
+    }
+
+    skip_header(file);
+
+    long offset = ftell(file);
+
+    Row *row;
+    row = read_csv(file, offset);
+
+    while(row != NULL){
+        int result = insert_node(table, row->title, row->artist, offset);
+
+        if(result == -1){
+            fprintf(stderr, "Error al insertar el nodo con titulo: %s y artista: %s\n", row->title, row->artist);
+        }
+
+        offset = ftell(file);
+        free(row);
+        row = read_csv(file, offset);
+    }
+
+    close_csv(file);
+    return 0;
+}
