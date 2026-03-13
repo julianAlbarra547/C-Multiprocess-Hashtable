@@ -46,19 +46,19 @@ Row *read_csv(FILE *file, long offset) {
 
     if(file == NULL){
         perror("Archivo no encontrado.\n");
-        exit(-1);
+        return NULL;
     }
     
     if(offset < 0){
         perror("Posicion del offset invalida.\n");
-        exit(-1);
+        return NULL;
     }
 
     seek_val = fseek(file, offset, SEEK_SET);
     
     if(seek_val < 0){
         perror("Registro no localizado.\n");
-        exit(-1);
+        return NULL;
     }
     
     Row *row = malloc(sizeof(Row));
@@ -67,7 +67,7 @@ Row *read_csv(FILE *file, long offset) {
     if(gets_val == NULL){
         perror("Error al obtener valores.\n");
         free(row);
-        exit(-1);
+        return NULL;
     }
     
     
