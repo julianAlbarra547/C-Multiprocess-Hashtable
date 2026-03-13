@@ -88,5 +88,5 @@ typedef struct hash_node {
 | `save_index(table, idx_path)` | Serializa la tabla a un archivo binario `.idx`. |
 | `load_index(idx_path, table)` | Deserializa el `.idx` y reconstruye la tabla en RAM. |
 
-Para el diseño detallado del módulo hash ver [hash_design.md](hash_design.md).
+Para el diseño detallado del módulo hash ver [HASH_DESIGN.md](HASH_DESIGN.md).
 
