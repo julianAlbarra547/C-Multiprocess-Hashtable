@@ -6,16 +6,17 @@ El sistema está compuesto por dos procesos independientes no emparentados que s
 
 ```
 ┌─────────────────┐                    ┌─────────────────────┐
-│   ui_process    │ ←── IPC (TBD) ───→ │   csv_process       │
+│   ui_process    │ ←── FIFOs (IPC) ──→│   csv_process       │
 │                 │                    │                      │
 │  Interfaz de    │                    │  Búsqueda en índice  │
 │  usuario        │                    │  hash + lectura CSV  │
 └─────────────────┘                    └─────────────────────┘
                                                 │
-                                    ┌───────────┴───────────┐
-                                    │                       │
-                               spotify.idx            spotify_data.csv
-                               (índice binario)        (dataset, 4 GB)
+                              ┌─────────────────┼─────────────────┐
+                              │                 │                 │
+                     spotify_idx.bin   spotify_entries.bin   spotify_data.csv
+                     (tabla hash,      (nodos del índice,    (dataset, 4 GB,
+                      80 KB en RAM)     en disco)             solo lectura)
 ```
 
 ## Módulos implementados
@@ -71,7 +72,7 @@ typedef struct hash_node {
     char  title[512];
     char  artist[2048];
     long  offset_csv;
-    struct hash_node *next;
+    long next_entry;
 } Hash_node;
 ```
 
@@ -79,14 +80,13 @@ typedef struct hash_node {
 
 | Función | Descripción |
 |---|---|
-| `create_hash_table(table)` | Inicializa todos los cajones a NULL |
 | `hash(title)` | Calcula el cajón usando djb2 |
-| `normalize_string(in, out, size)` | Convierte a minúsculas para búsqueda insensible. |
-| `insert_node(table, title, artist, offset)` | Inserta si no existe la combinación título+artista. |
-| `search_node(table, title, artist)` | Retorna el offset en el CSV o -1 si no existe. |
-| `build_index(csv_path, table)` | Lee el CSV completo y llena la tabla en RAM |
-| `save_index(table, idx_path)` | Serializa la tabla a un archivo binario `.idx`. |
-| `load_index(idx_path, table)` | Deserializa el `.idx` y reconstruye la tabla en RAM. |
+| `normalize_string(in, out, size)` | Convierte a minúsculas para búsqueda insensible |
+| `create_table(table)` | Inicializa todos los cajones a -1 |
+| `build_index(csv_path, idx_path, entries_path)` | Lee el CSV, deduplica por título+artista y genera `spotify_idx.bin` y `spotify_entries.bin` |
+| `load_table(idx_path, table)` | Carga `spotify_idx.bin` en RAM (80 KB) |
+| `search_node(table, entries, title, artist)` | Busca por título y artista recorriendo nodos en disco, retorna offset en el CSV o -1 |
+
 
 Para el diseño detallado del módulo hash ver [HASH_DESIGN.md](HASH_DESIGN.md).
 

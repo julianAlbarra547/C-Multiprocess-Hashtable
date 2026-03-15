@@ -5,7 +5,7 @@
 #include <stdlib.h>
 
 #define HASH_TABLE_SIZE 10000
-#define TABLE_IDX "spotify.idx"
+#define TABLE_IDX "spotify_idx.bin"
 #define ENTRIES_BIN "spotify_entries.bin"
 
 typedef struct hash_node{
