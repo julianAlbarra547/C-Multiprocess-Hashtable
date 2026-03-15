@@ -81,6 +81,8 @@ typedef struct hash_node {
 | Función | Descripción |
 |---|---|
 | `hash(title)` | Calcula el cajón usando djb2 |
+| `node_exists(table, entries, normalized_title, normalized_artist)` | Verifica si la combinación título+artista ya existe, retorna 1 de ser así y 0 si no  |
+| `insert_node(table, entries, normalized_title, normalized_artist, offset)` | Inserta un nodo nuevo  |
 | `normalize_string(in, out, size)` | Convierte a minúsculas para búsqueda insensible |
 | `create_table(table)` | Inicializa todos los cajones a -1 |
 | `build_index(csv_path, idx_path, entries_path)` | Lee el CSV, deduplica por título+artista y genera `spotify_idx.bin` y `spotify_entries.bin` |

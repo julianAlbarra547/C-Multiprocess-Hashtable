@@ -16,6 +16,8 @@ typedef struct hash_node{
 } Hash_node;
 
 unsigned int hash(char *title);
+int node_exists(long *table, FILE *entries, char *normalized_title, char *normalized_artist);
+int insert_node(long *table, FILE *entries, char *normalized_title, char *normalized_artist, long offset);
 int build_index(const char *csv_path, const char *idx_path, const char *entries_path);
 long search_node(long *table, FILE *entries, char *title, char *artist);
 int load_table(const char *idx_path, long *table);

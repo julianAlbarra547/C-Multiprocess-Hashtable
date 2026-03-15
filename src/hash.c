@@ -46,6 +46,42 @@ int create_table(long *table){
     return 0;
 }
 
+int node_exists(long *table, FILE *entries, char *normalized_title, char *normalized_artist){
+    unsigned int index = hash(normalized_title);
+    long bucket_offset = table[index];
+
+    while(bucket_offset != -1){
+        Hash_node aux;
+        fseek(entries, bucket_offset, SEEK_SET);
+        fread(&aux, sizeof(Hash_node), 1, entries);
+
+        if(strcmp(aux.title, normalized_title) == 0 && strcmp(aux.artist, normalized_artist) == 0){
+            return 1;
+        }
+
+        bucket_offset = aux.next_entry;
+    }
+
+    return 0; 
+}
+
+int insert_node(long *table, FILE *entries, char *normalized_title, char *normalized_artist, long offset){
+    unsigned int index = hash(normalized_title);
+    
+    Hash_node new_node;
+    strncpy(new_node.title, normalized_title, sizeof(new_node.title));
+    strncpy(new_node.artist, normalized_artist, sizeof(new_node.artist));
+    new_node.offset = offset;
+    new_node.next_entry = table[index];
+
+    fseek(entries, 0, SEEK_END);
+    long new_node_offset = ftell(entries);
+    fwrite(&new_node, sizeof(Hash_node), 1, entries);
+
+    table[index] = new_node_offset;
+    return 0;
+}
+
 int build_index(const char *csv_path, const char *idx_path, const char *entries_path){
     FILE *csv = open_csv(csv_path);
 
@@ -53,7 +89,7 @@ int build_index(const char *csv_path, const char *idx_path, const char *entries_
         return -1; 
     }
 
-    FILE *entries_file = fopen(entries_path, "wb");
+    FILE *entries_file = fopen(entries_path, "w+b");
 
     if(entries_file == NULL){
         perror("Error al crear el archivo de entradas.\n");
@@ -76,52 +112,32 @@ int build_index(const char *csv_path, const char *idx_path, const char *entries_
     Row *row = read_csv(csv, offset);
 
     while(row != NULL){
+
+        static int counter = 0;
+        counter++;
+        if(counter % 10000 == 0){
+            printf("Filas procesadas: %d\n", counter);
+            fflush(stdout);
+        }
+
         char normalized_title[512], normalized_artist[2048];
         if(normalize_string(row->title, normalized_title, sizeof(normalized_title)) != 0){
-            fprintf(stderr, "Error normalizando el titulo: %s\n", row->title);
+            perror("Error normalizando el titulo.\n");
             free(row);
             offset = ftell(csv);
             row = read_csv(csv, offset);
             continue;
         }
         if(normalize_string(row->artist, normalized_artist, sizeof(normalized_artist)) != 0){
-            fprintf(stderr, "Error normalizando el artista: %s\n", row->artist);
+            perror("Error normalizando el artista.\n");
             free(row);
             offset = ftell(csv);
             row = read_csv(csv, offset);
             continue;
         }
-
-        unsigned int index = hash(normalized_title);
-        long bucket_offset = table[index];
-
-        int is_duplicate = 0;
-
-        while(bucket_offset != -1){
-            Hash_node aux;
-            fseek(entries_file, bucket_offset, SEEK_SET);
-            fread(&aux, sizeof(Hash_node), 1, entries_file);
-
-            if(strcmp(aux.title, normalized_title) == 0 && strcmp(aux.artist, normalized_artist) == 0){
-                is_duplicate = 1;
-                break;
-            }
-
-            bucket_offset = aux.next_entry;
-        }
-
-        if(!is_duplicate){
-            Hash_node new_node;
-            strncpy(new_node.title, normalized_title, sizeof(new_node.title));
-            strncpy(new_node.artist, normalized_artist, sizeof(new_node.artist));
-            new_node.offset = offset;
-            new_node.next_entry = table[index];
-
-            fseek(entries_file, 0, SEEK_END);
-            long new_node_offset = ftell(entries_file);
-            fwrite(&new_node, sizeof(Hash_node), 1, entries_file);
-
-            table[index] = new_node_offset;
+        
+        if(!node_exists(table, entries_file, normalized_title, normalized_artist)){
+            insert_node(table, entries_file, normalized_title, normalized_artist, offset);
         }
 
         free(row);
