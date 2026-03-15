@@ -76,12 +76,7 @@ int insert_node(Hash_node **hash_table, char *title, char *artist, long offset){
     
     Hash_node *nodo_indice = hash_table[index];
     
-    if(nodo_indice == NULL){
-        hash_table[index] = new_node;
-        return 0;
-    }
-    
-    while(nodo_indice->next != NULL){
+    while(nodo_indice != NULL){
         
         if(strcmp(nodo_indice->title, new_node->title) == 0 &&
            strcmp(nodo_indice->artist, new_node->artist) == 0
@@ -93,15 +88,9 @@ int insert_node(Hash_node **hash_table, char *title, char *artist, long offset){
         nodo_indice = nodo_indice->next;
     }
     
-    if(strcmp(nodo_indice->title, new_node->title) == 0 &&
-       strcmp(nodo_indice->artist, new_node->artist) == 0
-    ){
-        return 1;
-    }
-    
-    nodo_indice->next = new_node;
-    return 0;
-    
+    new_node->next = hash_table[index];
+    hash_table[index] = new_node;
+    return 0; 
 }
 
 long search_node(Hash_node **table, char *title, char *artist){
