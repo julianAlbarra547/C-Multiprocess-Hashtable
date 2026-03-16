@@ -1,6 +1,6 @@
 El programa consiste de un menu que actua como cliente de un sistema IPC, enviando comandos (cargar, buscar, añadir) a un servidor hash a través de tuberías con nombre (FIFOs) y mostrando sus respuestas.
 
-### Setup: Creacion de los FIFO's con mkfifo /tmp/csv_ui_to_hash and mkfifo /tmp/csv_hash_to_ui
+### Setup: Creacion de los FIFO's con mkfifo /tmp/csv_ui_to_hash & mkfifo /tmp/csv_hash_to_ui
 ### Requeriments: GCC, OS compatble con POSIX.
 
 ### Proccedure:
