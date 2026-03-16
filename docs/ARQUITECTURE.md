@@ -59,7 +59,7 @@ typedef struct {
 - El parser maneja campos entre comillas dobles para soportar valores con comas internas, como artistas colaborativos: "Bonny Cepeda, Peter Cruz, Ray Polanco".
 - Los tamaños de los buffers se determinaron analizando el máximo real de cada columna con un script Python (realizado con IA) sobre el dataset completo.
 
-### hash
+### 2. hash
 
 **Archivos:** `hash.h`, `hash.c`
 
@@ -91,4 +91,33 @@ typedef struct hash_node {
 
 
 Para el diseño detallado del módulo hash ver [HASH_DESIGN.md](HASH_DESIGN.md).
+
+### 3. csv_ui_viewer
+
+**Archivo:** `csv_ui_viewer.c`
+
+**Responsabilidad:** Ser la interfaz de usuario por la cual se puede consultar y escribir algún registro al CSV.
+
+**Funciones expuestas:**
+
+| Función | Descripción |
+|---|---|
+| `trim(text)` | Elimina espacios y saltos de línea al inicio y final de un string |
+| `prompt(label, out, out_size)` | Muestra una etiqueta, lee la entrada del usuario y aplica trim |
+| `print_row(row)` | Imprime todos los campos de un registro `IpcRow` en pantalla |
+| `send_query(client, title, artist)` | Consulta un registro existente por título y artista opcional |
+| `send_append(client, row)` | Envía un nuevo registro para ser escrito en el CSV |
+| `print_menu()` | Imprime el menú de opciones en pantalla |
+
+**Estructura principal:**
+```c
+IpcClient *client;   // Manejado por ipc_client.h — abstrae la comunicación con el servidor
+```
+
+**Decisiones de diseño:**
+
+- La comunicación con el servidor se delega completamente a `ipc_client.h`, desacoplando la lógica de la UI del mecanismo de transporte subyacente.
+- El artista es un campo opcional en la búsqueda — si se deja vacío, el servidor busca solo por título.
+- Cualquier fallo de comunicación o error del servidor llama a `exit(-1)`, ya que continuar sin conexión activa no tiene sentido.
+
 

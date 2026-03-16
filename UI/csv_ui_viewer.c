@@ -9,14 +9,26 @@
 #define INPUT_BUFFER_SIZE 1024                                                                              // Limitamos el tamano del Buffer para nuestro caso particular 
  
 // trim() nos permite eliminar espacios, tabulaciones y saltos de linea al inicio y al final para trabajar mejor con el Hash Server, modificandolo desde memoria
-void trim(char *text) {
-  if (!text) return;                                                                                        // Se evita el puntero nulo 
+void trim(char *text) {                                                                                    // Se evita trabajar con el puntero nulo 
+  if (!text){
+   return;                                                                                        
+  }
+ 
   char *start = text;
-  while (*start && (*start == ' ' || *start == '\t' || *start == '\n' || *start == '\r')) start++;          // Avanza 'start' mientras haya espacios en blanco al inicio
+  while (*start && (*start == ' ' || *start == '\t' || *start == '\n' || *start == '\r')) {                 // Avanza 'start' mientras haya espacios en blanco al inicio
+   start++;        
+  }
+ 
   char *end = text + strlen(text);
-  while (end > start && (end[-1] == ' ' || end[-1] == '\t' || end[-1] == '\n' || end[-1] == '\r')) end--;   // Retrocede 'end' mientras haya espacios en blanco al final
+  while (end > start && (end[-1] == ' ' || end[-1] == '\t' || end[-1] == '\n' || end[-1] == '\r')){         // Retrocede 'end' mientras haya espacios en blanco al final
+   end--;   
+  }
+ 
   size_t len = (size_t)(end - start);                                                                       // Longitud del string ya trimeado
-  if (start != text) memmove(text, start, len);                                                             // Si hubo espacios al inicio, mueve el contenido al principio del buffer                                                
+  if (start != text){                                                                                       // Si hubo espacios al inicio, mueve el contenido al principio del buffer                                    
+   memmove(text, start, len);    
+  }
+ 
   text[len] = '\0';                   
 }
  
@@ -45,13 +57,13 @@ void print_ipc_row(const IpcRow *row) {                                         
   printf("Explicit: %s\n", row->explicito);
 }
 
-void send_query(IpcClient *client, const char *title, const char *artist) {
-  IpcQuery query;
-  memset(&query, 0, sizeof(query));
-  strncpy(query.title, title ? title : "", sizeof(query.title) - 1);
+void send_query(IpcClient *client, const char *title, const char *artist) {            // Para consulta de un registro existente
+  IpcQuery query;                                                                      // Creacion del query desde Hash
+  memset(&query, 0, sizeof(query));                                                    // Llenamos un bloque de memoria con el query
+  strncpy(query.title, title ? title : "", sizeof(query.title) - 1);                   // Copiamos el titulo en query.title con restriccion de bytes
   if (artist && artist[0]) {
     query.has_artist = 1;
-    strncpy(query.artist, artist, sizeof(query.artist) - 1);
+    strncpy(query.artist, artist, sizeof(query.artist) - 1);                           // Copiamos el artista en query.artist con restriccion de bytes
   } else {
     query.has_artist = 0;
   }
@@ -60,7 +72,7 @@ void send_query(IpcClient *client, const char *title, const char *artist) {
   IpcQueryResp resp;
   if (!ipc_client_query(client, &query, &resp, err, sizeof(err))) {
     perror("Error en el query: ");
-    return;
+    exit(-1);
   }
 
   if (resp.status == 0 && resp.count > 0){
@@ -73,16 +85,20 @@ void send_query(IpcClient *client, const char *title, const char *artist) {
   else perror("Error en servidor: ");
 }
 
-void send_append(IpcClient *client, const IpcRow *row) {
+void send_append(IpcClient *client, const IpcRow *row) {                               // Para escribir un nuevo registro 
   char err[256];
   IpcAppendResp resp;
   if (!ipc_client_append(client, row, &resp, err, sizeof(err))) {
     perror("Error de fallo append: ");
-    return;
+    exit(-1);
   }
 
-  if (resp.status == 0) printf("Registro agregado.\n");
-  else perror("Error en servidor: ");
+  if (resp.status == 0){
+   printf("Registro agregado.\n");
+  } else {
+   perror("Error en servidor: ");
+   exit(-1);
+  }
 }
  
 void print_menu(void) {                                          // Imprime el menu principal de opciones en pantalla.
@@ -99,10 +115,12 @@ int main(void) {
   IpcClient *client = NULL;
  
   char input[INPUT_BUFFER_SIZE];
-  while (1) {                          // Procedimiento principal del programa 
+  while (1) {                                       // Procedimiento principal del programa 
     print_menu();
-    if (!fgets(input, sizeof(input), stdin)) break;  // Lee el input; sale si hay EOF 
-    int option = atoi(input);          // Convierte la entrada a entero 
+    if (!fgets(input, sizeof(input), stdin)){       // Lee el input; sale si hay EOF 
+     break;
+    }
+    int option = atoi(input);                       // Convierte la entrada a entero 
  
     switch (option) {
  
@@ -116,8 +134,13 @@ int main(void) {
 
         char err[256];
         client = ipc_client_connect(endpoint[0] ? endpoint : NULL, err, sizeof(err));
-        if (!client) printf("Fallo al conectar: %s\n", err[0] ? err : "error desconocido");
-        else printf("Conectado.\n");
+        
+        if (!client){
+         perror("Fallo al conectar con el servidor: ");
+         exit(-1);
+        } else{
+         printf("Conectado.\n");
+        }
         break;
       }
  
@@ -128,10 +151,10 @@ int main(void) {
         }
         char title[INPUT_BUFFER_SIZE];
         char artist[INPUT_BUFFER_SIZE];
-        prompt("Title: ", title, sizeof(title));
-        prompt("Artist (opcional, Enter para ignorar): ", artist, sizeof(artist));
+        prompt("Titulo: ", title, sizeof(title));
+        prompt("Artista (opcional, Enter para ignorar): ", artist, sizeof(artist));
         if (title[0] == '\0') {
-          printf("Title requerido.\n");
+          printf("Titulo requerido.\n");
           break;
         }
         send_query(client, title, artist);
@@ -147,16 +170,16 @@ int main(void) {
         memset(&row, 0, sizeof(row));
         char buffer[INPUT_BUFFER_SIZE];
 
-        prompt("ID (int): ", buffer, sizeof(buffer));
+        prompt("ID (entero): ", buffer, sizeof(buffer));
         row.id = atoi(buffer);
 
-        prompt("Title: ", row.title, sizeof(row.title));
+        prompt("Titulo: ", row.title, sizeof(row.title));
 
-        prompt("Rank (int): ", buffer, sizeof(buffer));
+        prompt("Posicion en ranking (entero): ", buffer, sizeof(buffer));
         row.rank = (int16_t)atoi(buffer);
 
-        prompt("Date (YYYY-MM-DD): ", row.date, sizeof(row.date));
-        prompt("Artist: ", row.artist, sizeof(row.artist));
+        prompt("Fecha (YYYY-MM-DD): ", row.date, sizeof(row.date));
+        prompt("Artista: ", row.artist, sizeof(row.artist));
         prompt("URL: ", row.url, sizeof(row.url));
 
         prompt("Streams (int): ", buffer, sizeof(buffer));
@@ -164,20 +187,20 @@ int main(void) {
 
         prompt("Album: ", row.album, sizeof(row.album));
 
-        prompt("Duration_ms (int): ", buffer, sizeof(buffer));
+        prompt("Duracion en ms (entero): ", buffer, sizeof(buffer));
         row.duration = atof(buffer);
 
         prompt("Explicit (True/False): ", row.explicito, sizeof(row.explicito));
 
         if (row.title[0] == '\0') {
-          printf("Title requerido.\n");
+          printf("Titulo requerido.\n");
           break;
         }
         send_append(client, &row);
         break;
       }
 
-      case 5:                                               // Cerrar conexion sin salir del programa
+      case 5:                                                    // Cerrar conexion sin salir del programa
         if (client == NULL) printf("No conectado.\n");
         else {
           ipc_client_close(client);
