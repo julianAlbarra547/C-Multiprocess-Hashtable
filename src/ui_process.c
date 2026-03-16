@@ -16,9 +16,13 @@ void print_menu(){                                       // Imprime el menu prin
     printf("Elegir opcion: ");
 }
 
-void print_option1(){
+void option1(){
+    char title[512];
+    char artist[1024];
+
+
     printf("Opcion 1 seleccionada.\n");
-    
+
 }
 
 int main(){

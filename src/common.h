@@ -21,7 +21,7 @@ typedef struct row{
 
 typedef struct {
     char title[512];
-    char author[1024];
+    char artist[1024];
 } Query;
 
 #endif
