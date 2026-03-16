@@ -103,10 +103,12 @@ int main(void) {
   IpcClient *client = NULL;
  
   char input[INPUT_BUFFER_SIZE];
-  while (1) {                          // Procedimiento principal del programa 
+  while (1) {                                       // Procedimiento principal del programa 
     print_menu();
-    if (!fgets(input, sizeof(input), stdin)) break;  // Lee el input; sale si hay EOF 
-    int option = atoi(input);          // Convierte la entrada a entero 
+    if (!fgets(input, sizeof(input), stdin)){       // Lee el input; sale si hay EOF 
+     break;
+    }
+    int option = atoi(input);                       // Convierte la entrada a entero 
  
     switch (option) {
  
@@ -137,10 +139,10 @@ int main(void) {
         }
         char title[INPUT_BUFFER_SIZE];
         char artist[INPUT_BUFFER_SIZE];
-        prompt("Title: ", title, sizeof(title));
-        prompt("Artist (opcional, Enter para ignorar): ", artist, sizeof(artist));
+        prompt("Titulo: ", title, sizeof(title));
+        prompt("Artista (opcional, Enter para ignorar): ", artist, sizeof(artist));
         if (title[0] == '\0') {
-          printf("Title requerido.\n");
+          printf("Titulo requerido.\n");
           break;
         }
         send_query(client, title, artist);
@@ -156,16 +158,16 @@ int main(void) {
         memset(&row, 0, sizeof(row));
         char buffer[INPUT_BUFFER_SIZE];
 
-        prompt("ID (int): ", buffer, sizeof(buffer));
+        prompt("ID (entero): ", buffer, sizeof(buffer));
         row.id = atoi(buffer);
 
-        prompt("Title: ", row.title, sizeof(row.title));
+        prompt("Titulo: ", row.title, sizeof(row.title));
 
-        prompt("Rank (int): ", buffer, sizeof(buffer));
+        prompt("Posicion en ranking (entero): ", buffer, sizeof(buffer));
         row.rank = (int16_t)atoi(buffer);
 
-        prompt("Date (YYYY-MM-DD): ", row.date, sizeof(row.date));
-        prompt("Artist: ", row.artist, sizeof(row.artist));
+        prompt("Fecha (YYYY-MM-DD): ", row.date, sizeof(row.date));
+        prompt("Artista: ", row.artist, sizeof(row.artist));
         prompt("URL: ", row.url, sizeof(row.url));
 
         prompt("Streams (int): ", buffer, sizeof(buffer));
@@ -173,20 +175,20 @@ int main(void) {
 
         prompt("Album: ", row.album, sizeof(row.album));
 
-        prompt("Duration_ms (int): ", buffer, sizeof(buffer));
+        prompt("Duracion en ms (entero): ", buffer, sizeof(buffer));
         row.duration = atof(buffer);
 
         prompt("Explicit (True/False): ", row.explicito, sizeof(row.explicito));
 
         if (row.title[0] == '\0') {
-          printf("Title requerido.\n");
+          printf("Titulo requerido.\n");
           break;
         }
         send_append(client, &row);
         break;
       }
 
-      case 5:                                               // Cerrar conexion sin salir del programa
+      case 5:                                                    // Cerrar conexion sin salir del programa
         if (client == NULL) printf("No conectado.\n");
         else {
           ipc_client_close(client);
