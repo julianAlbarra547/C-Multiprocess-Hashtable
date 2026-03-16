@@ -1,24 +1,42 @@
 #!/bin/bash
-
-# ir al directorio raíz del proyecto
+set -e
+ 
+# Navega a la raíz del proyecto (un nivel arriba de scripts/)
 cd "$(dirname "$0")/.."
-
-FIFO1="/tmp/csv_ui_to_hash"
-FIFO2="/tmp/csv_hash_to_ui"
-
-echo "Creando FIFOs..."
-[ -p $FIFO1 ] || mkfifo $FIFO1
-[ -p $FIFO2 ] || mkfifo $FIFO2
-
-echo "Compilando..."
-
-gcc src/hash_server.c src/hash.c src/csv_reader.c -o hash_server
-gcc UI/csv_ui_viewer.c -o ui
-
-echo "Iniciando servidor..."
+ 
+CSV="${1:-data/sample/spotify_data_sample.csv}"
+IDX="spotify_idx.bin"
+ENTRIES="spotify_entries.bin"
+ 
+echo "=== Compilando... ==="
+make
+ 
+# Solo indexa si no existen los .bin o si el CSV es más nuevo que el índice
+if [ ! -f "$IDX" ] || [ ! -f "$ENTRIES" ] || [ "$CSV" -nt "$IDX" ]; then
+    echo ""
+    echo "=== Generando índice (esto tarda un momento)... ==="
+    ./build_index "$CSV"
+else
+    echo "=== Índice ya existe, saltando build_index ==="
+fi
+ 
+echo ""
+echo "=== Iniciando servidor en background... ==="
 ./hash_server &
-
-sleep 1
-
-echo "Iniciando UI..."
-./ui
+SERVER_PID=$!
+echo "Servidor PID: $SERVER_PID"
+ 
+# Espera a que los FIFOs estén listos
+sleep 0.5
+ 
+echo ""
+echo "=== Iniciando cliente... ==="
+./csv_ui_viewer
+ 
+# Al salir del cliente, baja el servidor
+echo ""
+echo "=== Cerrando servidor (PID $SERVER_PID)... ==="
+kill $SERVER_PID 2>/dev/null
+wait $SERVER_PID 2>/dev/null
+ 
+echo "=== Listo ==="
