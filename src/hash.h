@@ -23,4 +23,7 @@ long search_node(long *table, FILE *entries, char *title, char *artist);
 int search_range_node(long *table, FILE *entries, char *title, Hash_node *list, int size);
 int load_table(const char *idx_path, long *table);
 
+int normalize_string(char *input, char *output, size_t size);
+
+
 #endif

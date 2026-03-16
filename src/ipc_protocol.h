@@ -53,4 +53,12 @@ typedef struct
 
 } IpcAppendResp;
 
+typedef struct {
+    OpType type;
+    union {
+        IpcQuery query;
+        IpcRow row;
+    };
+} IpcRequest;
+
 #endif

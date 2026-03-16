@@ -31,7 +31,7 @@ void prompt(const char *label, char *out, size_t out_size) {
   trim(out);                                                                                                // Aplica trim para limpiar espacios extra 
 }
  
-void print_row(const IpcRow *row) {                                                                         // Para la busqueda y lectura del primer registro en cuestion
+void print_ipc_row(const IpcRow *row) {                                                                         // Para la busqueda y lectura del primer registro en cuestion
   printf("\n--- Resultado ---\n");
   printf("ID: %d\n", row->id);
   printf("Title: %s\n", row->title);
@@ -63,7 +63,12 @@ void send_query(IpcClient *client, const char *title, const char *artist) {
     return;
   }
 
-  if (resp.status == 0) print_row(&resp.row);
+  if (resp.status == 0 && resp.count > 0){
+    printf("Resultados encontrados: %d\n", resp.count);
+    for (int i = 0; i < resp.count; i++) {
+        print_ipc_row(&resp.rows[i]);
+    }
+    }
   else if (resp.status == 1) printf("No encontrado.\n");
   else perror("Error en servidor: ");
 }

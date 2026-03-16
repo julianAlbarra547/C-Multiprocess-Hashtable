@@ -11,7 +11,7 @@
 
 #define FIFO_REQ "/tmp/music_req"
 #define FIFO_RESP "/tmp/music_resp"
-#define CSV_FILE "spotify.csv"
+#define CSV_FILE "data/sample/spotify_data_sample.csv"
 
 typedef struct
 {
@@ -42,9 +42,10 @@ int main()
     }
 
     FILE *entries = fopen(ENTRIES_BIN, "rb+");
-    FILE *csv = open_csv(CSV_FILE);
+    if (!entries) entries = fopen(ENTRIES_BIN, "wb+");
+    FILE *csv = fopen(CSV_FILE, "r+");  // lectura y escritura
 
-    if (!entries || !csv)
+    if (!csv)
     {
         fprintf(stderr, "Error abriendo archivos\n");
         return 1;
@@ -52,7 +53,7 @@ int main()
 
     while (1)
     {
-        Request req;
+        IpcRequest req;
 
         if (read(req_fd, &req, sizeof(req)) <= 0)
             continue;
@@ -143,7 +144,7 @@ int main()
             IpcRow *r = &req.row;
 
             fprintf(csv,
-                    "%d,%s,%d,%s,%s,%s,%lld,%s,%f,%s\n",
+                    "%d,%s,%d,%s,%s,%s,%ld,%s,%f,%s\n",
                     r->id,
                     r->title,
                     r->rank,
@@ -157,12 +158,21 @@ int main()
 
             fflush(csv);
 
+            char norm_title[512], norm_artist[2048];
+            normalize_string(r->title, norm_title, sizeof(norm_title));
+            normalize_string(r->artist, norm_artist, sizeof(norm_artist));
             insert_node(
                 table,
                 entries,
-                r->title,
-                r->artist,
+                norm_title,
+                norm_artist,
                 offset);
+
+            FILE *idx = fopen(TABLE_IDX, "wb");
+            if (idx) {
+                fwrite(table, sizeof(long), HASH_TABLE_SIZE, idx);
+                fclose(idx);
+            }
 
             resp.status = 0;
 
