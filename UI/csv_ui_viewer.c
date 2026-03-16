@@ -31,7 +31,7 @@ void prompt(const char *label, char *out, size_t out_size) {
   trim(out);                                                                                                // Aplica trim para limpiar espacios extra 
 }
  
-static void print_row(const IpcRow *row) {
+void print_row(const IpcRow *row) {
   printf("\n--- Resultado ---\n");
   printf("ID: %d\n", row->id);
   printf("Title: %s\n", row->title);
@@ -45,7 +45,7 @@ static void print_row(const IpcRow *row) {
   printf("Explicit: %s\n", row->explicito);
 }
 
-static void send_query(IpcClient *client, const char *title, const char *artist) {
+void send_query(IpcClient *client, const char *title, const char *artist) {
   IpcQuery query;
   memset(&query, 0, sizeof(query));
   strncpy(query.title, title ? title : "", sizeof(query.title) - 1);
@@ -68,16 +68,16 @@ static void send_query(IpcClient *client, const char *title, const char *artist)
   else printf("Error en servidor (status=%d).\n", resp.status);
 }
 
-static void send_append(IpcClient *client, const IpcRow *row) {
+void send_append(IpcClient *client, const IpcRow *row) {
   char err[256];
   IpcAppendResp resp;
   if (!ipc_client_append(client, row, &resp, err, sizeof(err))) {
-    printf("Error: %s\n", err[0] ? err : "fallo append");
+    perror("Error de fallo append");
     return;
   }
 
   if (resp.status == 0) printf("Registro agregado.\n");
-  else printf("Error en servidor (status=%d).\n", resp.status);
+  else perror("Error en servidor");
 }
  
 void print_menu(void) {                                          // Imprime el menu principal de opciones en pantalla.
