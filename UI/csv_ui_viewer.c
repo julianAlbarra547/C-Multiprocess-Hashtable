@@ -6,7 +6,7 @@
 
 #include "ipc_client.h"
  
-#define INPUT_BUFFER_SIZE 1024                          /* Limitamos el tamano del Buffer para nuestro caso particular */
+#define INPUT_BUFFER_SIZE 1024                                                                              // Limitamos el tamano del Buffer para nuestro caso particular 
  
 // trim() nos permite eliminar espacios, tabulaciones y saltos de linea al inicio y al final para trabajar mejor con el Hash Server, modificandolo desde memoria
 void trim(char *text) {
@@ -31,7 +31,7 @@ void prompt(const char *label, char *out, size_t out_size) {
   trim(out);                                                                                                // Aplica trim para limpiar espacios extra 
 }
  
-void print_row(const IpcRow *row) {
+void print_row(const IpcRow *row) {                                                                         // Para la busqueda y lectura del primer registro en cuestion
   printf("\n--- Resultado ---\n");
   printf("ID: %d\n", row->id);
   printf("Title: %s\n", row->title);
@@ -59,25 +59,25 @@ void send_query(IpcClient *client, const char *title, const char *artist) {
   char err[256];
   IpcQueryResp resp;
   if (!ipc_client_query(client, &query, &resp, err, sizeof(err))) {
-    printf("Error: %s\n", err[0] ? err : "fallo query");
+    perror("Error en el query: ");
     return;
   }
 
   if (resp.status == 0) print_row(&resp.row);
   else if (resp.status == 1) printf("No encontrado.\n");
-  else printf("Error en servidor (status=%d).\n", resp.status);
+  else perror("Error en servidor: ");
 }
 
 void send_append(IpcClient *client, const IpcRow *row) {
   char err[256];
   IpcAppendResp resp;
   if (!ipc_client_append(client, row, &resp, err, sizeof(err))) {
-    perror("Error de fallo append");
+    perror("Error de fallo append: ");
     return;
   }
 
   if (resp.status == 0) printf("Registro agregado.\n");
-  else perror("Error en servidor");
+  else perror("Error en servidor: ");
 }
  
 void print_menu(void) {                                          // Imprime el menu principal de opciones en pantalla.
