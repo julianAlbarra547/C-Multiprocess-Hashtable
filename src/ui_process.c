@@ -16,8 +16,13 @@ void print_menu(){                                       // Imprime el menu prin
     printf("Elegir opcion: ");
 }
 
-int main(){
+void print_option1(){
+    printf("Opcion 1 seleccionada.\n");
+    
+}
 
+int main(){
+    Query query;
     int fdwrite, fdread;
     short option;
     short start = 1;
@@ -40,7 +45,6 @@ int main(){
 
         switch (option){
             case 1:
-                printf("Opcion 1 seleccionada.\n");
                 break;
             case 2:
                 printf("Opcion 2 seleccionada.\n");
