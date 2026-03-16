@@ -11,11 +11,6 @@ pero comprendidos y validados manualmente con datos reales.
   de archivo, lectura del primer registro, acceso aleatorio por offset, campos
   entre comillas, tipos numéricos y lectura de los 100 registros completos.
 
-* **hash_test.c** → Prueba las funciones de `hash.c` de forma aislada con
-  datos controlados. Cubre la función hash, creación de la tabla, inserción
-  con deduplicación por título+artista, búsqueda por offset, construcción del
-  índice desde el CSV de muestra y ciclo completo save+load+search.
-
 * **hash_stress_test.c** → Test agresivo usando el dataset real de 4GB.
   Construye o carga el índice completo, verifica que
   todas las búsquedas se ejecutan en menos de 2 segundos, comprueba
