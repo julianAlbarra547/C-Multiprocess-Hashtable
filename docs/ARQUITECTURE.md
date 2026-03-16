@@ -104,30 +104,20 @@ Para el diseño detallado del módulo hash ver [HASH_DESIGN.md](HASH_DESIGN.md).
 |---|---|
 | `trim(text)` | Elimina espacios y saltos de línea al inicio y final de un string |
 | `prompt(label, out, out_size)` | Muestra una etiqueta, lee la entrada del usuario y aplica trim |
-| `close_fifos(client)` | Cierra de forma segura los descriptores y el stream FIFO |
-| `connect_fifos(client, write_path, read_path)` | Abre los dos FIFOs en modo no bloqueante y guarda el estado en `FifoClient` |
-| `read_response(client)` | Espera la respuesta del servidor con timeout de 2 segundos usando `select()` |
-| `send_command(client, command, payload)` | Envía un comando al servidor con formato `COMANDO\|payload\n` |
+| `print_row(row)` | Imprime todos los campos de un registro `IpcRow` en pantalla |
 | `send_query(client, title, artist)` | Consulta un registro existente por título y artista opcional |
 | `send_append(client, row)` | Envía un nuevo registro para ser escrito en el CSV |
 | `print_menu()` | Imprime el menú de opciones en pantalla |
 
 **Estructura principal:**
 ```c
-typedef struct {
-    int   write_fd;
-    int   read_fd;
-    FILE *write_stream;
-    char  write_path[1024];
-    char  read_path[1024];
-    int   connected;
-} FifoClient;
+IpcClient *client;   // Manejado por ipc_client.h — abstrae la comunicación con el servidor
 ```
 
 **Decisiones de diseño:**
 
-- Los FIFOs se abren en modo `O_NONBLOCK` para evitar que el proceso UI se bloquee si el servidor no está listo.
-- Se usa `select()` con un timeout de 2 segundos en `read_response()` para no quedarse esperando indefinidamente una respuesta del servidor.
-- El formato de comunicación `COMANDO|payload\n` permite separar instrucción y datos en una sola línea, simplificando el parsing en el servidor.
+- La comunicación con el servidor se delega completamente a `ipc_client.h`, desacoplando la lógica de la UI del mecanismo de transporte subyacente.
+- El artista es un campo opcional en la búsqueda — si se deja vacío, el servidor busca solo por título.
+- Cualquier fallo de comunicación o error del servidor llama a `exit(-1)`, ya que continuar sin conexión activa no tiene sentido.
 
 
