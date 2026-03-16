@@ -31,7 +31,7 @@ void prompt(const char *label, char *out, size_t out_size) {
   trim(out);                                                                                                // Aplica trim para limpiar espacios extra 
 }
  
-void print_row(const IpcRow *row) {                                                                         // Para la busqueda y lectura del primer registro en cuestion
+void print_row(const IpcRow *row) {                                                                         // Lectura del registro actual en row
   printf("\n--- Resultado ---\n");
   printf("ID: %d\n", row->id);
   printf("Title: %s\n", row->title);
@@ -45,13 +45,13 @@ void print_row(const IpcRow *row) {                                             
   printf("Explicit: %s\n", row->explicito);
 }
 
-void send_query(IpcClient *client, const char *title, const char *artist) {
-  IpcQuery query;
-  memset(&query, 0, sizeof(query));
-  strncpy(query.title, title ? title : "", sizeof(query.title) - 1);
+void send_query(IpcClient *client, const char *title, const char *artist) {            // Para consulta de un registro existente
+  IpcQuery query;                                                                      // Creacion del query desde Hash
+  memset(&query, 0, sizeof(query));                                                    // Llenamos un bloque de memoria con el query
+  strncpy(query.title, title ? title : "", sizeof(query.title) - 1);                   // Copiamos el titulo en query.title con restriccion de bytes
   if (artist && artist[0]) {
     query.has_artist = 1;
-    strncpy(query.artist, artist, sizeof(query.artist) - 1);
+    strncpy(query.artist, artist, sizeof(query.artist) - 1);                           // Copiamos el artista en query.artist con restriccion de bytes
   } else {
     query.has_artist = 0;
   }
@@ -60,24 +60,33 @@ void send_query(IpcClient *client, const char *title, const char *artist) {
   IpcQueryResp resp;
   if (!ipc_client_query(client, &query, &resp, err, sizeof(err))) {
     perror("Error en el query: ");
-    return;
+    exit(-1);
   }
 
-  if (resp.status == 0) print_row(&resp.row);
-  else if (resp.status == 1) printf("No encontrado.\n");
-  else perror("Error en servidor: ");
+  if (resp.status == 0){
+   print_row(&resp.row);
+  } else if (resp.status == 1){
+   printf("No encontrado.\n");
+  } else {
+   perror("Error en servidor: ");
+   exit(-1);
+  }
 }
 
-void send_append(IpcClient *client, const IpcRow *row) {
+void send_append(IpcClient *client, const IpcRow *row) {                               // Para escribir un nuevo registro 
   char err[256];
   IpcAppendResp resp;
   if (!ipc_client_append(client, row, &resp, err, sizeof(err))) {
     perror("Error de fallo append: ");
-    return;
+    exit(-1);
   }
 
-  if (resp.status == 0) printf("Registro agregado.\n");
-  else perror("Error en servidor: ");
+  if (resp.status == 0){
+   printf("Registro agregado.\n");
+  } else {
+   perror("Error en servidor: ");
+   exit(-1);
+  }
 }
  
 void print_menu(void) {                                          // Imprime el menu principal de opciones en pantalla.
@@ -111,8 +120,13 @@ int main(void) {
 
         char err[256];
         client = ipc_client_connect(endpoint[0] ? endpoint : NULL, err, sizeof(err));
-        if (!client) printf("Fallo al conectar: %s\n", err[0] ? err : "error desconocido");
-        else printf("Conectado.\n");
+        
+        if (!client){
+         perror("Fallo al conectar con el servidor: ");
+         exit(-1);
+        } else{
+         printf("Conectado.\n");
+        }
         break;
       }
  
