@@ -5,20 +5,22 @@
 #include <stdlib.h>
 
 #define HASH_TABLE_SIZE 10000
+#define TABLE_IDX "spotify_idx.bin"
+#define ENTRIES_BIN "spotify_entries.bin"
 
 typedef struct hash_node{
     char title[512];
     char artist[2048];
-    long long offset;
-    struct hash_node *next;
+    long offset;
+    long next_entry;
 } Hash_node;
 
 unsigned int hash(char *title);
-int create_hash_table(Hash_node **hash_table);
-int insert_node(Hash_node **hash_table, char *title, char *artist, long offset); 
-long search_node(Hash_node **table, char *title, char *artist);
-int build_index(const char *csv_path, Hash_node **table);
-int save_index(Hash_node **table, const char *idx_path);
-int load_index(const char *idx_path, Hash_node **table);
+int node_exists(long *table, FILE *entries, char *normalized_title, char *normalized_artist);
+int insert_node(long *table, FILE *entries, char *normalized_title, char *normalized_artist, long offset);
+int build_index(const char *csv_path, const char *idx_path, const char *entries_path);
+long search_node(long *table, FILE *entries, char *title, char *artist);
+int search_range_node(long *table, FILE *entries, char *title, Hash_node *list, int size);
+int load_table(const char *idx_path, long *table);
 
 #endif

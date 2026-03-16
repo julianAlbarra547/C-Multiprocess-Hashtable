@@ -4,7 +4,7 @@
 #include <fcntl.h>
 #include <string.h>
 
-#include "ipc_client.h"
+#include "UI/ipc_client.h"
 #include "ipc_protocol.h"
 
 #define FIFO_REQ "/tmp/music_req"

@@ -5,13 +5,6 @@
 #include <ctype.h>
 #include <string.h>
 
-int create_hash_table(Hash_node **hash_table){
-    for(int i = 0; i < HASH_TABLE_SIZE; i++){
-        hash_table[i] = NULL;
-    }
-    return 0;
-}
-
 int normalize_string(char *input, char *output, size_t size){
 
     if(input == NULL || output == NULL || size == 0){
@@ -46,208 +39,195 @@ unsigned int hash(char *title){
     return hash_value % HASH_TABLE_SIZE;
 }
 
-int insert_node(Hash_node **hash_table, char *title, char *artist, long offset){
-    char normalized_title[512];
-
-    if(normalize_string(title, normalized_title, sizeof(normalized_title)) != 0){
-        fprintf(stderr, "Error normalizando el titulo: %s\n", title);
-        return -1;
+int create_table(long *table){
+    for(int i = 0; i < HASH_TABLE_SIZE; i++){
+        table[i] = -1;
     }
+    return 0;
+}
 
-    char normalized_artist[2048];
-
-    if(normalize_string(artist, normalized_artist, sizeof(normalized_artist)) != 0){
-        fprintf(stderr, "Error normalizando el artista: %s\n", artist);
-        return -1;
-    }
-
-    Hash_node *new_node = malloc(sizeof(Hash_node));
-    
-    if(new_node == NULL){
-        perror("Error al crear el nuevo nodo.\n");
-        return -1;
-    }
-    
-    strncpy(new_node->title, normalized_title, sizeof(new_node->title));
-    strncpy(new_node->artist, normalized_artist, sizeof(new_node->artist));
-    new_node->offset = offset;
-    
+int node_exists(long *table, FILE *entries, char *normalized_title, char *normalized_artist){
     unsigned int index = hash(normalized_title);
-    
-    Hash_node *nodo_indice = hash_table[index];
-    
-    while(nodo_indice != NULL){
-        
-        if(strcmp(nodo_indice->title, new_node->title) == 0 &&
-           strcmp(nodo_indice->artist, new_node->artist) == 0
-        ){
-            free(new_node);
+    long bucket_offset = table[index];
+
+    while(bucket_offset != -1){
+        Hash_node aux;
+        fseek(entries, bucket_offset, SEEK_SET);
+        fread(&aux, sizeof(Hash_node), 1, entries);
+
+        if(strcmp(aux.title, normalized_title) == 0 && strcmp(aux.artist, normalized_artist) == 0){
             return 1;
         }
-        
-        nodo_indice = nodo_indice->next;
+
+        bucket_offset = aux.next_entry;
     }
-    
-    new_node->next = hash_table[index];
-    hash_table[index] = new_node;
+
     return 0; 
 }
 
-long search_node(Hash_node **table, char *title, char *artist){
-    char normalized_title[512];
+int insert_node(long *table, FILE *entries, char *normalized_title, char *normalized_artist, long offset){
+    unsigned int index = hash(normalized_title);
+    
+    Hash_node new_node;
+    strncpy(new_node.title, normalized_title, sizeof(new_node.title));
+    strncpy(new_node.artist, normalized_artist, sizeof(new_node.artist));
+    new_node.offset = offset;
+    new_node.next_entry = table[index];
 
+    fseek(entries, 0, SEEK_END);
+    long new_node_offset = ftell(entries);
+    fwrite(&new_node, sizeof(Hash_node), 1, entries);
+
+    table[index] = new_node_offset;
+    return 0;
+}
+
+int build_index(const char *csv_path, const char *idx_path, const char *entries_path){
+    FILE *csv = open_csv(csv_path);
+
+    if(csv == NULL){
+        return -1; 
+    }
+
+    FILE *entries_file = fopen(entries_path, "w+b");
+
+    if(entries_file == NULL){
+        perror("Error al crear el archivo de entradas.\n");
+        fclose(csv);
+        return -1;
+    }
+
+    long *table = malloc(HASH_TABLE_SIZE * sizeof(long));
+    if(table == NULL){
+        perror("Error al asignar memoria para la tabla hash.\n");
+        fclose(csv);
+        fclose(entries_file);
+        return -1;
+    }
+    create_table(table);
+
+    skip_header(csv);
+
+    long offset = ftell(csv);
+    Row *row = read_csv(csv, offset);
+
+    while(row != NULL){
+
+        static int counter = 0;
+        counter++;
+        if(counter % 10000 == 0){
+            printf("Filas procesadas: %d\n", counter);
+            fflush(stdout);
+        }
+
+        char normalized_title[512], normalized_artist[2048];
+        if(normalize_string(row->title, normalized_title, sizeof(normalized_title)) != 0){
+            perror("Error normalizando el titulo.\n");
+            free(row);
+            offset = ftell(csv);
+            row = read_csv(csv, offset);
+            continue;
+        }
+        if(normalize_string(row->artist, normalized_artist, sizeof(normalized_artist)) != 0){
+            perror("Error normalizando el artista.\n");
+            free(row);
+            offset = ftell(csv);
+            row = read_csv(csv, offset);
+            continue;
+        }
+        
+        if(!node_exists(table, entries_file, normalized_title, normalized_artist)){
+            insert_node(table, entries_file, normalized_title, normalized_artist, offset);
+        }
+
+        free(row);
+        offset = ftell(csv);
+        row = read_csv(csv, offset);
+    }
+
+    FILE *idx_file = fopen(idx_path, "wb");
+    if(idx_file == NULL){
+        perror("Error al crear el archivo de indice.\n");
+        free(table);
+        fclose(csv);
+        fclose(entries_file);
+        return -1;
+    }
+
+    fwrite(table, sizeof(long), HASH_TABLE_SIZE, idx_file);
+    fclose(idx_file);
+    free(table);
+    close_csv(csv);
+    fclose(entries_file);
+    return 0;
+}
+
+long search_node(long *table, FILE *entries, char *title, char *artist){
+    char normalized_title[512];
     if(normalize_string(title, normalized_title, sizeof(normalized_title)) != 0){
-        fprintf(stderr, "Error normalizando el titulo: %s\n", title);
+        perror("Error normalizando el titulo\n");
         return -1;
     }
 
     char normalized_artist[2048];
-
     if(normalize_string(artist, normalized_artist, sizeof(normalized_artist)) != 0){
-        fprintf(stderr, "Error normalizando el artista: %s\n", artist);
+        perror("Error normalizando el artista\n");
         return -1;
     }
-    
+
     unsigned int index = hash(normalized_title);
-    
-    Hash_node *nodo_indice = table[index];
-    
-    while(nodo_indice != NULL){
-        
-        if(strcmp(nodo_indice->title, normalized_title) == 0 &&
-           strcmp(nodo_indice->artist, normalized_artist) == 0 
-        ){
-            return nodo_indice->offset;
+    long bucket_offset = table[index];
+
+    while(bucket_offset != -1){
+        Hash_node aux;
+        fseek(entries, bucket_offset, SEEK_SET);
+        fread(&aux, sizeof(Hash_node), 1, entries);
+
+        if(strcmp(aux.title,  normalized_title)  == 0 &&
+           strcmp(aux.artist, normalized_artist) == 0){
+            return aux.offset;
         }
-        
-        nodo_indice = nodo_indice->next;
+
+        bucket_offset = aux.next_entry;
     }
-    
+
     return -1;
 }
 
-int build_index(const char *csv_path, Hash_node **table){
-    FILE *file = open_csv(csv_path);
-    
-    if(file == NULL){
+int search_range_node(long *table, FILE *entries, char *title, Hash_node *list, int size){
+    char normalized_title[512];
+    if(normalize_string(title, normalized_title, sizeof(normalized_title)) != 0){
+        perror("Error normalizando el titulo\n");
         return -1;
     }
 
-    skip_header(file);
+    unsigned int index = hash(normalized_title);
+    long bucket_offset = table[index];
+    int count = 0;
 
-    long offset = ftell(file);
+    while(bucket_offset != -1 && count < size){
+        Hash_node aux;
+        fseek(entries, bucket_offset, SEEK_SET);
+        fread(&aux, sizeof(Hash_node), 1, entries);
 
-    Row *row;
-    row = read_csv(file, offset);
-
-    while(row != NULL){
-        int result = insert_node(table, row->title, row->artist, offset);
-
-        if(result == -1){
-            fprintf(stderr, "Error al insertar el nodo con titulo: %s y artista: %s\n", row->title, row->artist);
+        if(strcmp(aux.title, normalized_title) == 0){
+            list[count] = aux;
+            count++;
         }
 
-        offset = ftell(file);
-        free(row);
-        row = read_csv(file, offset);
+        bucket_offset = aux.next_entry;
     }
-
-    close_csv(file);
-    return 0;
+    return count;
 }
 
-int save_index(Hash_node **table, const char *idx_path){
-    FILE *file = fopen(idx_path, "wb");
-
-    if(file == NULL){
-        perror("Error al abrir el archivo de indice para escritura.\n");
+int load_table(const char *idx_path, long *table){
+    FILE *idx_file = fopen(idx_path, "rb");
+    if(idx_file == NULL){
+        perror("Error al abrir el archivo de indice.\n");
         return -1;
     }
 
-    int r, size = HASH_TABLE_SIZE;
-    r = fwrite(&size, sizeof(size), 1, file);
-
-    if(r != 1){
-        perror("Error al escribir el tamaño de la tabla hash en el archivo de indice.\n");
-        fclose(file);
-        return -1;
-    }
-
-    for(int i= 0; i < HASH_TABLE_SIZE; i++){
-        int size_bucket = 0;
-        Hash_node *aux = table[i];
-        
-        while(aux != NULL){
-            size_bucket++;
-            aux = aux->next;
-        }
-        
-        fwrite(&size_bucket, sizeof(int), 1, file);
-        
-        aux = table[i];
-        
-        while(aux != NULL){
-            
-            fwrite(aux->title, sizeof(aux->title), 1, file);
-            fwrite(aux->artist, sizeof(aux->artist), 1, file);
-            fwrite(&aux->offset, sizeof(aux->offset), 1, file);
-            
-            aux = aux->next;
-        }
-    }
-    
-    fclose(file);
-
-    return 0;
-}
-
-int load_index(const char *idx_path, Hash_node **table){
-    FILE *file = fopen(idx_path, "rb");
-    
-    if(file == NULL){
-        perror("Error al abrir el archivo idx.\n");
-        return -1;
-    }
-
-    int verification_size;
-    
-    fread(&verification_size, sizeof(int), 1, file);
-    
-    if(verification_size != HASH_TABLE_SIZE){
-        perror("Error, tamaños desiguales en la creación del hash.");
-        fclose(file);
-        return -1;
-    }
-    
-    int amount_nodes;
-    
-    for(int i = 0; i < HASH_TABLE_SIZE; i++){
-        
-        fread(&amount_nodes, sizeof(int), 1, file);
-        
-        Hash_node *last = NULL;
-        
-        for(int j = 0; j < amount_nodes; j++){
-            
-            Hash_node *aux = malloc(sizeof(Hash_node));
-            fread(aux->title, sizeof(aux->title), 1, file);
-            fread(aux->artist, sizeof(aux->artist), 1, file);
-            fread(&aux->offset, sizeof(aux->offset), 1, file);
-            aux->next = NULL;
-            
-            if(j == 0){
-                table[i] = aux;
-                last = aux;
-                continue;
-            }
-            
-            last->next = aux;
-            last = aux;
-            
-        }
-        
-    }
-    
-    fclose(file);
+    fread(table, sizeof(long), HASH_TABLE_SIZE, idx_file);
+    fclose(idx_file);
     return 0;
 }
