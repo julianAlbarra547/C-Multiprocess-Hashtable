@@ -9,14 +9,26 @@
 #define INPUT_BUFFER_SIZE 1024                                                                              // Limitamos el tamano del Buffer para nuestro caso particular 
  
 // trim() nos permite eliminar espacios, tabulaciones y saltos de linea al inicio y al final para trabajar mejor con el Hash Server, modificandolo desde memoria
-void trim(char *text) {
-  if (!text) return;                                                                                        // Se evita el puntero nulo 
+void trim(char *text) {                                                                                    // Se evita trabajar con el puntero nulo 
+  if (!text){
+   return;                                                                                        
+  }
+ 
   char *start = text;
-  while (*start && (*start == ' ' || *start == '\t' || *start == '\n' || *start == '\r')) start++;          // Avanza 'start' mientras haya espacios en blanco al inicio
+  while (*start && (*start == ' ' || *start == '\t' || *start == '\n' || *start == '\r')) {                 // Avanza 'start' mientras haya espacios en blanco al inicio
+   start++;        
+  }
+ 
   char *end = text + strlen(text);
-  while (end > start && (end[-1] == ' ' || end[-1] == '\t' || end[-1] == '\n' || end[-1] == '\r')) end--;   // Retrocede 'end' mientras haya espacios en blanco al final
+  while (end > start && (end[-1] == ' ' || end[-1] == '\t' || end[-1] == '\n' || end[-1] == '\r')){         // Retrocede 'end' mientras haya espacios en blanco al final
+   end--;   
+  }
+ 
   size_t len = (size_t)(end - start);                                                                       // Longitud del string ya trimeado
-  if (start != text) memmove(text, start, len);                                                             // Si hubo espacios al inicio, mueve el contenido al principio del buffer                                                
+  if (start != text){                                                                                       // Si hubo espacios al inicio, mueve el contenido al principio del buffer                                    
+   memmove(text, start, len);    
+  }
+ 
   text[len] = '\0';                   
 }
  
