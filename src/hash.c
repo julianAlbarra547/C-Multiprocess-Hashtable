@@ -194,6 +194,32 @@ long search_node(long *table, FILE *entries, char *title, char *artist){
     return -1;
 }
 
+int search_range_node(long *table, FILE *entries, char *title, Hash_node *list, int size){
+    char normalized_title[512];
+    if(normalize_string(title, normalized_title, sizeof(normalized_title)) != 0){
+        perror("Error normalizando el titulo\n");
+        return -1;
+    }
+
+    unsigned int index = hash(normalized_title);
+    long bucket_offset = table[index];
+    int count = 0;
+
+    while(bucket_offset != -1 && count < size){
+        Hash_node aux;
+        fseek(entries, bucket_offset, SEEK_SET);
+        fread(&aux, sizeof(Hash_node), 1, entries);
+
+        if(strcmp(aux.title, normalized_title) == 0){
+            list[count] = aux;
+            count++;
+        }
+
+        bucket_offset = aux.next_entry;
+    }
+    return count;
+}
+
 int load_table(const char *idx_path, long *table){
     FILE *idx_file = fopen(idx_path, "rb");
     if(idx_file == NULL){
