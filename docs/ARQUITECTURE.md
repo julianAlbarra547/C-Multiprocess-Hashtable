@@ -59,7 +59,7 @@ typedef struct {
 - El parser maneja campos entre comillas dobles para soportar valores con comas internas, como artistas colaborativos: "Bonny Cepeda, Peter Cruz, Ray Polanco".
 - Los tamaños de los buffers se determinaron analizando el máximo real de cada columna con un script Python (realizado con IA) sobre el dataset completo.
 
-### hash
+### 2. hash
 
 **Archivos:** `hash.h`, `hash.c`
 
@@ -91,4 +91,13 @@ typedef struct hash_node {
 
 
 Para el diseño detallado del módulo hash ver [HASH_DESIGN.md](HASH_DESIGN.md).
+
+### 3. csv_ui_viewer
+
+**Archivo:** `csv_ui_viewer.c`
+
+**Responsabilidad:** Ser la interfaz de usuario por la cual se puede consultar y escribir algun registro al CSV.
+
+
+
 
