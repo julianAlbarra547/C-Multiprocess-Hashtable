@@ -20,6 +20,7 @@ int node_exists(long *table, FILE *entries, char *normalized_title, char *normal
 int insert_node(long *table, FILE *entries, char *normalized_title, char *normalized_artist, long offset);
 int build_index(const char *csv_path, const char *idx_path, const char *entries_path);
 long search_node(long *table, FILE *entries, char *title, char *artist);
+int search_range_node(long *table, FILE *entries, char *title, long *offset, int size);
 int load_table(const char *idx_path, long *table);
 
 #endif
