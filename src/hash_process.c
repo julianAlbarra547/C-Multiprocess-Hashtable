@@ -10,11 +10,18 @@
 #include <errno.h>
 #include "hash.h"
 
+#define CSV_FILE "data/sample/spotify_data_sample.csv"
 
 int main(){
     Query query;
     int identify;
     int r, fdread, fdwrite;
+
+    r = build_index(CSV_FILE, TABLE_IDX, ENTRIES_BIN);
+    if (r == -1) {
+        fprintf(stderr, "Error building index\n");
+        return 1;
+    }
 
     r = mkfifo(FIFO_CLIENT_PATH, 0666);
     if (r == -1) {
@@ -109,7 +116,53 @@ int main(){
 
         } else if (identify == 2){
             // Agregar cancion
-            
+            Row new_row;
+            if (read(fread, &new_row, sizeof(Row)) <= 0) {
+                perror("Error reading new row from fifo");
+                continue;
+            }
+
+            if (search_node(table, entries_file, new_row.title, new_row.artist) != -1) {
+                fprintf(stderr, "Error: A song with Title='%s' and Artist='%s' already exists.\n", new_row.title, new_row.artist);
+                continue;
+            }
+
+            FILE *csv = fopen(CSV_FILE, "a");
+            if (!csv) {
+                fprintf(stderr, "Error abriendo archivo CSV para agregar nueva canción\n");
+                continue;
+            }
+
+            fprintf(csv,
+                    "%d,%s,%d,%s,%s,%s,%ld,%s,%f,%s\n",
+                    new_row.id,
+                    new_row.title,
+                    new_row.rank,
+                    new_row.date,
+                    new_row.artist,
+                    new_row.url,
+                    new_row.streams,
+                    new_row.album,
+                    new_row.duration,
+                    new_row.explicito);
+            fflush(csv);
+            fclose(csv);
+                // Actualizar índice
+            char norm_title[512], norm_artist[2048];
+            normalize_string(new_row.title, norm_title, sizeof(norm_title));
+            normalize_string(new_row.artist, norm_artist, sizeof(norm_artist));
+            insert_node(table, entries_file, norm_title, norm_artist, ftell(csv));
+
+
+            // Guardar tabla actualizada
+            FILE *idx = fopen(TABLE_IDX, "wb");
+            if (!idx) {
+                fprintf(stderr, "Error abriendo archivo de índice para actualización\n");
+                continue;
+            }
+            fwrite(table, sizeof(long), HASH_TABLE_SIZE, idx);
+            fclose(idx);
+
         } else {
             fprintf(stderr, "Invalid identify value: %d\n", identify);
         }
