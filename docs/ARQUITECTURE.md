@@ -19,6 +19,8 @@ El sistema está compuesto por dos procesos independientes no emparentados que s
                       80 KB en RAM)     en disco)             solo lectura)
 ```
 
+La comunicación entre procesos se realiza mediante ** FIFOs nombrados**. La UI envía primero un entero identificador de operación y luego la estructura de datos correspondiente. El servidor siempre responde, incluso en casos de error. Para el diseño detallado del IPC ver [IPC_DESIGN.md](IPC_DESIGN.md).
+
 ## Módulos implementados
 
 ### 1. csv_reader
@@ -69,12 +71,14 @@ typedef struct {
 
 ```c
 typedef struct hash_node {
-    char  title[512];
-    char  artist[2048];
-    long  offset_csv;
-    long next_entry;
+    char title[512];    // criterio de búsqueda primario
+    char artist[2048];  // criterio de búsqueda secundario
+    long offset;        // posición en bytes del registro en el CSV
+    long next_entry;    // offset del siguiente nodo en entries.bin, -1 si es el último
 } Hash_node;
 ```
+
+Los nodos no viven en RAM sino en `spotify_entries.bin`. La tabla hash en RAM es únicamente un arreglo de `long` de 80 KB que apunta a los nodos en disco.
 
 **Funciones expuestas:**
 
@@ -88,11 +92,41 @@ typedef struct hash_node {
 | `build_index(csv_path, idx_path, entries_path)` | Lee el CSV, deduplica por título+artista y genera `spotify_idx.bin` y `spotify_entries.bin` |
 | `load_table(idx_path, table)` | Carga `spotify_idx.bin` en RAM (80 KB) |
 | `search_node(table, entries, title, artist)` | Busca por título y artista recorriendo nodos en disco, retorna offset en el CSV o -1 |
-
+| `search_range_node(table, entries, title, list, size)` | Busca hasta N nodos por título, retorna el conteo |
 
 Para el diseño detallado del módulo hash ver [HASH_DESIGN.md](HASH_DESIGN.md).
 
-### 3. ui_process
+### 3. hash_process
+
+**Archivo:** `hash_process.c`
+
+**Responsabilidad:** Proceso servidor que gestiona el índice hash, atiende búsquedas e inserciones recibidas por FIFO y mantiene el CSV y el índice actualizados.
+
+**Flujo de arranque:**
+
+```
+1. Abrir el CSV en modo r+
+2. Verificar si el índice ya existe:
+   - Si no existe → build_index() desde el CSV completo
+   - Si existe    → omitir construcción
+3. Crear los FIFOs si no existen
+4. Abrir los FIFOs y esperar conexión de la UI
+5. Cargar la tabla hash en RAM con load_table()
+6. Abrir entries.bin
+7. Entrar en loop de atención de solicitudes
+```
+
+**Operaciones que atiende:**
+
+| identify | Operación | Entrada | Respuesta |
+|---|---|---|---|
+| 1 | Búsqueda | `Query` (título + artista opcional) | `int count` + `count` Rows |
+| 2 | Inserción | `Row` completo | `int confirm` (1=éxito, 0=error) |
+
+---
+
+
+### 4. ui_process
 
 **Archivo:** `ui_process.c`
 
@@ -103,7 +137,7 @@ Para el diseño detallado del módulo hash ver [HASH_DESIGN.md](HASH_DESIGN.md).
 | Función | Descripción |
 |---|---|
 | `print_menu()` | Imprime el menú de opciones en pantalla |
-| `option1(fdwrite, fdread)` | Solicita título y artista al usuario, envía la consulta al servidor y muestra el resultado |
+| `option1(fdwrite, fdread)` | Solicita título y artista (opcional) al usuario, envía la consulta al servidor y muestra el resultado |
 | `option2(fdwrite, fdread)` | Solicita todos los campos de un nuevo registro, los valida y los envía al servidor para inserción |
 
 **Protocolo de comunicación:**
@@ -117,7 +151,7 @@ write(fdwrite, &new_row,  sizeof(Row));   // opcion 2
 
 El servidor responde con una `Row` para búsquedas (con `id == -1` si no se encontró) o con un `int` de confirmación para inserciones.
 
-### 4. utils
+### 5. utils
 
 **Archivos:** `utils.h`, `utils.c`
 
@@ -136,7 +170,7 @@ El servidor responde con una `Row` para búsquedas (con `id == -1` si no se enco
 
 ---
 
-### 5. common
+### 6. common
 
 **Archivo:** `common.h`
 
