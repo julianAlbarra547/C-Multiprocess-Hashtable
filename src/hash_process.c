@@ -99,32 +99,28 @@ int main(){
                 continue;
             }
 
-            if(query.artist == NULL || query.artist[0] == '\0'){
+            if(query.artist[0] == '\0'){
                 //Buscar solo por titulo
                 Hash_node nodes[5];
                 int count = search_range_node(table, entries_file, query.title, nodes, 5);
 
                 if (count == -1) {
                     fprintf(stderr, "Error searching for title: %s\n", query.title);
+                    write(fdwrite, &count, sizeof(int));
                     continue;
                 } else if (count <= 5){
                     printf("It was found %d entries for title: %s\n", count, query.title);
+                    write(fdwrite, &count, sizeof(int));
                 }
 
-                if (write(fdwrite, &nodes, sizeof(Hash_node) * count) == -1) {
-                    perror("Error writing to fifo");
-                    continue;
-                }
 
             } else {
                 //Buscar por titulo y artista
                 long offset = search_node(table, entries_file, query.title, query.artist);
                 if (offset == -1) {
                     fprintf(stderr, "No entry found for Title='%s' and Artist='%s'\n", query.title, query.artist);
-                    Row empty;
-                    memset(&empty, 0, sizeof(Row));
-                    empty.id = -1; // Indicar error con un ID negativo
-                    write(fdwrite, &empty, sizeof(Row));
+                    int confirm = -1;
+                    write(fdwrite, &confirm, sizeof(int));
                     continue;
                 }
 
@@ -133,11 +129,8 @@ int main(){
 
                 if (write(fdwrite, row, sizeof(Row)) == -1) {
                     perror("Error writing row to fifo");
-                    Row empty;
-                    memset(&empty, 0, sizeof(Row));
-                    empty.id = -1; // Indicar error con un ID negativo
-                    write(fdwrite, &empty, sizeof(Row));
-                    free(row);
+                    int confirm = -1;
+                    write(fdwrite, &confirm, sizeof(int));
                     continue;
                 }
 
