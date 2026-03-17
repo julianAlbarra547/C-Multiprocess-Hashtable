@@ -62,11 +62,6 @@ void option1(int fdwrite, int fdread){
         fgets(artist, sizeof(artist), stdin);
         trim(artist);
 
-        if(strlen(artist) == 0){
-            printf("Artista no puede estar vacio. Intente nuevamente.\n");
-            continue;
-        }
-
         if(strlen(artist) >= sizeof(query.artist)){
             printf("Artista demasiado largo. Intente nuevamente.\n");
             continue;
@@ -237,12 +232,14 @@ int main(){
     fdwrite = open(FIFO_CLIENT_PATH, O_WRONLY);
     if(fdwrite == -1){
         perror("Open write fifo");
+        close(fdwrite);
         return -1;
     }
 
     fdread = open(FIFO_SERVER_PATH, O_RDONLY);
     if(fdread == -1){
         perror("Open read fifo");
+        close(fdread);
         return -1;
     }
 
