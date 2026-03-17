@@ -102,16 +102,29 @@ int main(){
             if(query.artist[0] == '\0'){
                 //Buscar solo por titulo
                 Hash_node nodes[5];
+                Row results[5];
                 int count = search_range_node(table, entries_file, query.title, nodes, 5);
 
                 if (count == -1) {
                     fprintf(stderr, "Error searching for title: %s\n", query.title);
+                    write(fdwrite, &count, sizeof(int)); // Enviar -1 para indicar error
                     continue;
                 } else if (count <= 5){
                     printf("It was found %d entries for title: %s\n", count, query.title);
+                    write(fdwrite, &count, sizeof(int)); // Enviar el número de resultados encontrados
                 }
 
-                if (write(fdwrite, &nodes, sizeof(Hash_node) * count) == -1) {
+                for (int i = 0; i < count; i++) {
+                    Row *row = read_csv(csv, nodes[i].offset);
+                    if (row == NULL) {
+                        fprintf(stderr, "Error reading row from CSV at offset: %ld\n", nodes[i].offset);
+                        continue;
+                    }
+                    results[i] = *row;
+                    free(row);
+                }
+
+                if (write(fdwrite, &results, sizeof(Row) * count) == -1) {
                     perror("Error writing to fifo");
                     continue;
                 }
