@@ -3,61 +3,46 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include "common.h"
-#include "csv_reader.h"
 #include <fcntl.h>
 #include <string.h>
 #include <errno.h>
+#include <ctype.h>
+#include "common.h"
+#include "csv_reader.h"
+#include "utils.h"
 
-void print_menu(){                                       // Imprime el menu principal de opciones en pantalla.
-    printf("\n Bienvenido! Seleccione una opcion:\n");
-    printf("1) Buscar canción.\n");
+/* ─── Menu ──────────────────────────────────────────────────────────────── */
+
+void print_menu(){
+    printf("\nBienvenido! Seleccione una opcion:\n");
+    printf("1) Buscar cancion.\n");
     printf("2) Agregar registro.\n");
     printf("3) Salir\n");
     printf("Elegir opcion: ");
 }
 
-void trim(char *text) {                                                                                    // Se evita trabajar con el puntero nulo 
-  if (!text){
-   return;                                                                                        
-  }
- 
-  char *start = text;
-  while (*start && (*start == ' ' || *start == '\t' || *start == '\n' || *start == '\r')) {                 // Avanza 'start' mientras haya espacios en blanco al inicio
-   start++;        
-  }
- 
-  char *end = text + strlen(text);
-  while (end > start && (end[-1] == ' ' || end[-1] == '\t' || end[-1] == '\n' || end[-1] == '\r')){         // Retrocede 'end' mientras haya espacios en blanco al final
-   end--;   
-  }
- 
-  size_t len = (size_t)(end - start);                                                                       // Longitud del string ya trimeado
-  if (start != text){                                                                                       // Si hubo espacios al inicio, mueve el contenido al principio del buffer                                    
-   memmove(text, start, len);    
-  }
- 
-  text[len] = '\0';                   
-}
+/* ─── Opcion 1: Buscar cancion ──────────────────────────────────────────── */
 
-void option1(int fdwrite, int fdread){                                  // Opcion 1: Buscar cancion. Solicita al usuario el titulo y artista de la cancion a buscar, valida la entrada y envia la consulta al servidor.
+void option1(int fdwrite, int fdread){
     char title[512];
     char artist[2048];
     Query query;
-    int indentify = 1;
+    int identify = 1;
     short invalid = 1;
 
     while(invalid){
-        printf("Opcion 1 seleccionada.\n");
-        printf("Ingrese el titulo de la cancion (para finalizar la escritura presione enter): ");
-        printf("Nota: El titulo no puede estar vacio.\n");
-        printf("Nota: El titulo no puede exceder los 512 caracteres.\n");
-        printf("Nota: El titulo no puede ser solo espacios en blanco.\n");
-        printf("Nota: Para regresar al menu principal, ingrese un 0 en blanco y presione enter.\n");
+        printf("\nOpcion 1: Buscar cancion\n");
+        printf("Nota: Ingrese 0 para regresar al menu.\n");
+        printf("Titulo de la cancion: ");
         fgets(title, sizeof(title), stdin);
         trim(title);
 
-        if(strlen(title) == 0){  
+        if(strncmp(title, "0", 1) == 0){
+            printf("Regresando al menu principal...\n");
+            return;
+        }
+
+        if(strlen(title) == 0){
             printf("Titulo no puede estar vacio. Intente nuevamente.\n");
             continue;
         }
@@ -67,18 +52,13 @@ void option1(int fdwrite, int fdread){                                  // Opcio
             continue;
         }
 
-        if(strncmp(title, "0", 1) == 0){
-            printf("Regresando al menu principal...\n");
-            return;
-        }
-
         invalid = 0;
     }
 
     invalid = 1;
 
     while(invalid){
-        printf("Ingrese el artista de la cancion (para finalizar la escritura presione enter): ");
+        printf("Artista de la cancion: ");
         fgets(artist, sizeof(artist), stdin);
         trim(artist);
 
@@ -86,7 +66,7 @@ void option1(int fdwrite, int fdread){                                  // Opcio
             printf("Artista no puede estar vacio. Intente nuevamente.\n");
             continue;
         }
-        
+
         if(strlen(artist) >= sizeof(query.artist)){
             printf("Artista demasiado largo. Intente nuevamente.\n");
             continue;
@@ -95,61 +75,194 @@ void option1(int fdwrite, int fdread){                                  // Opcio
         invalid = 0;
     }
 
-    strncpy(query.title, title, sizeof(query.title));
+    strncpy(query.title,  title,  sizeof(query.title));
     strncpy(query.artist, artist, sizeof(query.artist));
 
-    write(fdwrite, &indentify, sizeof(int));
-    write(fdwrite, &query, sizeof(Query));
+    write(fdwrite, &identify, sizeof(int));
+    write(fdwrite, &query,    sizeof(Query));
 
     Row result;
     read(fdread, &result, sizeof(Row));
 
     if(result.id == -1){
-        printf("Cancion no encontrada.\n");
+        printf("NA - Cancion no encontrada.\n");
     } else {
         print_row(&result);
     }
 }
 
-void option2(){             // Opcion 2: Agregar registro. Solicita al usuario los datos de la cancion a agregar, valida la entrada y envia la consulta al servidor.
-    Row new_row;
-    
+/* ─── Opcion 2: Agregar registro ────────────────────────────────────────── */
 
-    printf("Opcion 2 seleccionada.\n");
+void option2(int fdwrite, int fdread){
+    Row new_row;
+    int identify = 2;
+    char buff[64];
+    short invalid;
+
+    /* ID */
+    invalid = 1;
+    while(invalid){
+        if(!prompt_text("\nID de la cancion (0 para volver): ", buff, sizeof(buff))) return;
+        if(!valid_positive_int(buff)){
+            printf("ID invalido. Debe ser un numero entero positivo.\n");
+            continue;
+        }
+        new_row.id = atoi(buff);
+        invalid = 0;
+    }
+
+    /* Titulo */
+    invalid = 1;
+    while(invalid){
+        if(!prompt_text("Titulo de la cancion (0 para volver): ", new_row.title, sizeof(new_row.title))) return;
+        if(strlen(new_row.title) == 0){
+            printf("Titulo no puede estar vacio.\n");
+            continue;
+        }
+        invalid = 0;
+    }
+
+    /* Rank */
+    invalid = 1;
+    while(invalid){
+        if(!prompt_text("Rank de la cancion (0 para volver): ", buff, sizeof(buff))) return;
+        if(!valid_positive_int(buff)){
+            printf("Rank invalido. Debe ser un numero entero positivo.\n");
+            continue;
+        }
+        new_row.rank = (short) atoi(buff);
+        invalid = 0;
+    }
+
+    /* Fecha */
+    invalid = 1;
+    while(invalid){
+        if(!prompt_text("Fecha de lanzamiento YYYY-MM-DD (0 para volver): ", new_row.date, sizeof(new_row.date))) return;
+        if(!valid_date(new_row.date)){
+            printf("Fecha invalida. Formato requerido: YYYY-MM-DD.\n");
+            continue;
+        }
+        invalid = 0;
+    }
+
+    /* Artista */
+    invalid = 1;
+    while(invalid){
+        if(!prompt_text("Artista de la cancion (0 para volver): ", new_row.artist, sizeof(new_row.artist))) return;
+        if(strlen(new_row.artist) == 0){
+            printf("Artista no puede estar vacio.\n");
+            continue;
+        }
+        invalid = 0;
+    }
+
+    /* URL */
+    invalid = 1;
+    while(invalid){
+        if(!prompt_text("URL de la cancion (0 para volver): ", new_row.url, sizeof(new_row.url))) return;
+        if(strlen(new_row.url) == 0){
+            printf("URL no puede estar vacia.\n");
+            continue;
+        }
+        invalid = 0;
+    }
+
+    /* Streams */
+    invalid = 1;
+    while(invalid){
+        if(!prompt_text("Numero de streams (0 para volver): ", buff, sizeof(buff))) return;
+        if(!valid_positive_int(buff)){
+            printf("Streams invalido. Debe ser un numero entero positivo.\n");
+            continue;
+        }
+        new_row.streams = atoll(buff);
+        invalid = 0;
+    }
+
+    /* Album */
+    invalid = 1;
+    while(invalid){
+        if(!prompt_text("Album de la cancion (0 para volver): ", new_row.album, sizeof(new_row.album))) return;
+        if(strlen(new_row.album) == 0){
+            printf("Album no puede estar vacio.\n");
+            continue;
+        }
+        invalid = 0;
+    }
+
+    /* Duracion */
+    invalid = 1;
+    while(invalid){
+        if(!prompt_text("Duracion en segundos (0 para volver): ", buff, sizeof(buff))) return;
+        if(!valid_positive_double(buff)){
+            printf("Duracion invalida. Debe ser un numero positivo.\n");
+            continue;
+        }
+        new_row.duration = atof(buff) * 1000.0;
+        invalid = 0;
+    }
+
+    /* Explicito */
+    invalid = 1;
+    while(invalid){
+        if(!prompt_text("Es explicita? True/False (0 para volver): ", new_row.explicito, sizeof(new_row.explicito))) return;
+        if(!valid_explicit(new_row.explicito)){
+            printf("Valor invalido. Ingrese True o False.\n");
+            continue;
+        }
+        invalid = 0;
+    }
+
+    write(fdwrite, &identify, sizeof(int));
+    write(fdwrite, &new_row,  sizeof(Row));
+
+    int confirm;
+    read(fdread, &confirm, sizeof(int));
+
+    if(confirm == 1){
+        printf("Registro agregado exitosamente.\n");
+    } else {
+        printf("Error al agregar el registro.\n");
+    }
 }
+
+/* ─── Main ──────────────────────────────────────────────────────────────── */
 
 int main(){
     int fdwrite, fdread;
     short option;
     short start = 1;
+    char buff[8];
 
     fdwrite = open(FIFO_CLIENT_PATH, O_WRONLY);
-    if (fdwrite == -1) {
+    if(fdwrite == -1){
         perror("Open write fifo");
         return -1;
     }
 
     fdread = open(FIFO_SERVER_PATH, O_RDONLY);
-    if (fdread == -1) {
+    if(fdread == -1){
         perror("Open read fifo");
         return -1;
     }
 
     while(start){
         print_menu();
-        scanf("%hd", &option);
+        fgets(buff, sizeof(buff), stdin);
+        trim(buff);
+        option = (short) atoi(buff);
 
-        switch (option){
+        switch(option){
             case 1:
                 option1(fdwrite, fdread);
-                continue;;
+                break;
             case 2:
-                printf("Opcion 2 seleccionada.\n");
+                option2(fdwrite, fdread);
                 break;
             case 3:
                 printf("Saliendo del programa...\n");
                 start = 0;
-                continue;
+                break;
             default:
                 printf("Opcion no valida. Intente nuevamente.\n");
         }
@@ -157,4 +270,5 @@ int main(){
 
     close(fdwrite);
     close(fdread);
+    return 0;
 }
