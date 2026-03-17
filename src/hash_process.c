@@ -99,7 +99,7 @@ int main(){
                 continue;
             }
 
-            if(query.artist == NULL || query.artist[0] == '\0'){
+            if(query.artist[0] == '\0'){
                 //Buscar solo por titulo
                 Hash_node nodes[5];
                 int count = search_range_node(table, entries_file, query.title, nodes, 5);
@@ -207,12 +207,6 @@ int main(){
             int confirm = 1;
             write(fdwrite, &confirm, sizeof(int));
             fclose(idx);
-
-            int confirm = 1;
-            if (write(fdwrite, &confirm, sizeof(int)) == -1) {
-                perror("Error writing confirmation to fifo");
-                continue;
-            }
 
         } else {
             fprintf(stderr, "Invalid identify value: %d\n", identify);
