@@ -7,7 +7,7 @@
 #define HASH_TABLE_SIZE 10000
 #define TABLE_IDX "../data/index/spotify_idx.bin"
 #define ENTRIES_BIN "../data/index/spotify_entries.bin"
-#define CSV_FILE "data/sample/spotify_data_sample.csv"
+#define CSV_FILE "../data/raw/spotify_data.csv"
 typedef struct hash_node{
     char title[512];
     char artist[2048];
