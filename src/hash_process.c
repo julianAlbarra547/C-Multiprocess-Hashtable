@@ -161,6 +161,9 @@ int main(){
                 continue;
             }
             fwrite(table, sizeof(long), HASH_TABLE_SIZE, idx);
+
+            int confirm = 1;
+            write(fdwrite, &confirm, sizeof(int));
             fclose(idx);
 
         } else {
