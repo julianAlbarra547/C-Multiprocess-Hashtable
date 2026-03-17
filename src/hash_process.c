@@ -139,6 +139,9 @@ int main(){
                     continue;
                 }
 
+                int count = 1;
+                write(fdwrite, &count, sizeof(int));
+
                 Row *row;
                 row = read_csv(csv, offset);
 
