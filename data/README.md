@@ -18,5 +18,6 @@ data/sample/spotify_data_sample.csv
 
 Los índices generados por el programa se almacenan en:
 
-data/index/
+data/index/spotify_idx.bin
+data/index/spotify_entries.bin
 
