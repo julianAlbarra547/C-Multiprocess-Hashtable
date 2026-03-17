@@ -237,12 +237,14 @@ int main(){
     fdwrite = open(FIFO_CLIENT_PATH, O_WRONLY);
     if(fdwrite == -1){
         perror("Open write fifo");
+        close(fdwrite);
         return -1;
     }
 
     fdread = open(FIFO_SERVER_PATH, O_RDONLY);
     if(fdread == -1){
         perror("Open read fifo");
+        close(fdread);
         return -1;
     }
 
