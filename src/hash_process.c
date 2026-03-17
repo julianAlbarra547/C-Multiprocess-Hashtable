@@ -28,7 +28,7 @@ int main(){
         perror("mkfifo read");
         return -1;
     }
-
+    
     r = mkfifo(FIFO_SERVER_PATH, 0666);
     if (r == -1) {
         perror("mkfifo write");
@@ -53,15 +53,15 @@ int main(){
         return 1;
     }
 
-    long entries_file = open(ENTRIES_BIN, O_RDWR);
-    if (entries_file == -1) {
+    FILE *entries_file = fopen(ENTRIES_BIN, "rb+");;
+    if (!entries_file) {
         fprintf(stderr, "Error abriendo archivo de entradas\n");
         return 1;
     }
 
     while(1){
 
-        if (read(fdread, &identify, sizeof(int) <=0)){
+        if (read(fdread, &identify, sizeof(int)) <= 0) {
             perror("Error reading identity from fifo");
             continue;
         }
@@ -88,7 +88,7 @@ int main(){
                     fprintf(stderr, "Error searching for title: %s\n", query.title);
                     continue;
                 } else if (count <= 5){
-                    fprintf("It was found %d entries for title: %s\n", count, query.title);
+                    printf("It was found %d entries for title: %s\n", count, query.title);
                 }
 
                 if (write(fdwrite, &nodes, sizeof(Hash_node) * count) == -1) {
@@ -117,7 +117,7 @@ int main(){
         } else if (identify == 2){
             // Agregar cancion
             Row new_row;
-            if (read(fread, &new_row, sizeof(Row)) <= 0) {
+            if (read(fdread, &new_row, sizeof(Row)) <= 0) {
                 perror("Error reading new row from fifo");
                 continue;
             }
@@ -168,7 +168,6 @@ int main(){
         }
 
     }
-
 
     return 0;
 }
