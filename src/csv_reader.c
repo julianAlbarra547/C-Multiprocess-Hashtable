@@ -162,6 +162,8 @@ void print_row(Row *row){
     row->duration,
     row->explicito
     );
+
+    printf("\n");
     
 }
 
