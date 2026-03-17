@@ -16,42 +16,47 @@ Se utilizan **tuberías nombradas (FIFOs)** creadas con `mkfifo()`. A diferencia
 Se usan dos FIFOs en direcciones opuestas para lograr comunicación bidireccional, ya que un solo FIFO solo permite flujo en una dirección.
 
 ## Diagrama de comunicación
-
 ```
 ui_process                          csv_process
     │                                     │
     │── write(identify) ──────────────────►│
     │── write(query / new_row) ───────────►│
     │                                     │ procesa
-    │◄── read(Row / confirm) ─────────────│
+    │◄── read(int count) ─────────────────│  ← búsqueda
+    │◄── read(Row * count) ───────────────│  ← búsqueda
+    │◄── read(int confirm) ───────────────│  ← inserción
 ```
 
 ## Protocolo de mensajes
 
-Cada operación comienza con un entero que identifica el tipo de solicitud, seguido de la estructura de datos correspondiente.
+Cada operación comienza con un entero que identifica el tipo de solicitud, seguido de la estructura de datos correspondiente. La respuesta es comienza con un entero para el caso de busqueda, el cuál corresponde a un error o la cantidad de registros de respuesta. En el caso de inserción manda un entero para confirmar el exito o fracaso del proceso. 
 
 **Operación 1 — Búsqueda:**
-
 ```c
 // UI envía:
 int identify = 1;
 write(fdwrite, &identify, sizeof(int));
-write(fdwrite, &query,    sizeof(Query));  // título + artista
+write(fdwrite, &query,    sizeof(Query));  // título + artista opcional
 
-// csv_process responde:
-write(fdwrite, &result, sizeof(Row));  // row completo, o id == -1 si no encontró
+// csv_process responde siempre con count primero:
+int count;  // -1 = error, 0 = no encontrado, N = cantidad de resultados
+write(fdwrite, &count, sizeof(int));
+
+// Luego envía count rows:
+for(int i = 0; i < count; i++){
+    write(fdwrite, &row, sizeof(Row));
+}
 ```
 
 **Operación 2 — Inserción:**
-
 ```c
 // UI envía:
 int identify = 2;
 write(fdwrite, &identify, sizeof(int));
-write(fdwrite, &new_row,  sizeof(Row));  // registro completo validado
+write(fdwrite, &new_row,  sizeof(Row));
 
 // csv_process responde:
-int confirm = 1;  // 1 = éxito, 0 = error
+int confirm;  // 1 = éxito, 0 = error (duplicado o fallo)
 write(fdwrite, &confirm, sizeof(int));
 ```
 
@@ -97,3 +102,9 @@ ambos procesos quedan conectados
 **Sin persistencia:** Los FIFOs son canales de comunicación en memoria. Los datos que pasan por ellos no se guardan en disco.
 
 **Limpieza:** Al terminar, `csv_process` elimina los FIFOs con `unlink()` para no dejar archivos huérfanos en `/tmp`.
+
+**Protocolo sincrónico:** Cada mensaje enviado por la UI debe tener exactamente
+una respuesta del servidor antes de enviar el siguiente mensaje. Desincronizar
+escrituras y lecturas deja bytes huérfanos en el FIFO que corrompen las
+operaciones siguientes. El servidor siempre envía una respuesta incluso en
+casos de error.
