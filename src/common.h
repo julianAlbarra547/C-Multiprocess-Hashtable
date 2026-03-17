@@ -7,7 +7,7 @@
 #define FIFO_SERVER_PATH "/tmp/server_fifo"
 typedef struct {
     char title[512];
-    char artist[1024];
+    char artist[2048];
 } Query;
 
 #endif
