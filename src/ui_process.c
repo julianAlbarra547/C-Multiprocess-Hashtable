@@ -62,11 +62,6 @@ void option1(int fdwrite, int fdread){
         fgets(artist, sizeof(artist), stdin);
         trim(artist);
 
-        if(strlen(artist) == 0){
-            printf("Artista no puede estar vacio. Intente nuevamente.\n");
-            continue;
-        }
-
         if(strlen(artist) >= sizeof(query.artist)){
             printf("Artista demasiado largo. Intente nuevamente.\n");
             continue;

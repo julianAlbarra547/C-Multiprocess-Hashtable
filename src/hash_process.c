@@ -140,7 +140,7 @@ int main(){
                     free(row);
                     continue;
                 }
-                
+
                 free(row);
             }
 
@@ -205,14 +205,13 @@ int main(){
             fwrite(table, sizeof(long), HASH_TABLE_SIZE, idx);
 
             int confirm = 1;
-            write(fdwrite, &confirm, sizeof(int));
-            fclose(idx);
 
-            int confirm = 1;
             if (write(fdwrite, &confirm, sizeof(int)) == -1) {
                 perror("Error writing confirmation to fifo");
                 continue;
             }
+
+            fclose(idx);
 
         } else {
             fprintf(stderr, "Invalid identify value: %d\n", identify);
