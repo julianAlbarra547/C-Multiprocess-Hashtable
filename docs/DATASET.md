@@ -1,90 +1,76 @@
 ## Dataset Overview
 
-El dataset contiene información de canciones presentes en los charts de Spotify,
-incluyendo métricas de popularidad, características de audio y metadatos del track.
+El dataset utilizado en este proyecto es una **versión optimizada y depurada** del conjunto de datos original de Spotify Charts. Se han seleccionado exclusivamente las columnas esenciales para el objetivo de este proyecto, eliminando métricas técnicas de audio para reducir el tamaño del archivo y agilizar el procesamiento.
 
-El dataset incluye información como:
-
-- nombre de la canción
-- artista
-- popularidad
-- métricas de audio (danceability, energy, tempo, etc.)
-
-Estos datos permiten realizar consultas sobre canciones según diferentes criterios.
+El dataset incluye información clave como:
+- Identificadores únicos de registro.
+- Metadatos del track (título, artista, álbum).
+- Estadísticas de rendimiento (rank, streams).
+- Atributos del contenido (explicit, duration).
 
 ## Source
 
-El dataset fue obtenido de Kaggle:
+Este dataset es una versión derivada y procesada por el autor de este repositorio. Los datos originales fueron obtenidos de Kaggle:
 
-Spotify Charts + Audio Data
-
+**Original Dataset Source:**
+Spotify Charts + Audio Data (Sunny Kakar)
 https://www.kaggle.com/datasets/sunnykakar/spotify-charts-all-audio-data
 
-Este dataset combina información de charts de Spotify con características de audio
-extraídas mediante la API de Spotify.
+**Versión Optimizada (Utilizada en este proyecto):**
+https://www.kaggle.com/datasets/julianalbarra547/spotify-daily-charts-optimized-version
 
 ## Dataset Structure
 
-El dataset se encuentra en formato CSV.
+El dataset se encuentra en formato CSV. Cada fila representa una entrada única en un chart diario y cada columna representa un atributo específico de la canción.
 
-Cada fila representa una canción.
-
-Cada columna representa un atributo de la canción.
-
-Formato general:
-
-\# (ID) | Title | Rank | Date | Artist | URL | Region | Chart | Trend | Streams
+**Formato de las columnas:**
+Index | Title | Rank | Date | Artist | URL | Streams | Album | Duration_ms | Explicit
 
 ## Fields Description
 
 | Field | Description |
 |------|-------------|
-| # | Identificador del registro en el dataset - Type: Int |
+| Index | Identificador numérico del registro (ID original) - Type: Int |
 | Title | Nombre de la canción - Type: Str |
-| Rank | Posición de la canción en el ranking - Type: Int |
-| Date | Fecha de actualización del ranking - Type: Date |
-| Artist | Nombre del artista - Type: Str |
-| Url | Dirección de la canción en url - Type: Str |
-...
+| Rank | Posición de la canción en el ranking diario - Type: Int |
+| Date | Fecha de la aparición en el chart - Type: Date (YYYY-MM-DD) |
+| Artist | Nombre del artista o artistas - Type: Str |
+| Url | Enlace directo a la canción en Spotify - Type: Str |
+| Streams | Número total de reproducciones ese día - Type: Int |
+| Album | Nombre del álbum al que pertenece el track - Type: Str |
+| Duration_ms | Duración de la canción en milisegundos - Type: Int |
+| Explicit | Indica si la canción contiene contenido explícito - Type: Bool (True/False) |
 
 ## Searchable Fields
 
 El sistema permitirá realizar consultas usando los siguientes campos:
 
-Primary Search Field:
-- ???
+**Primary Search Field:**
+- `Title` (Clave principal para la función Hash)
 
-Secondary Search Fields:
-- ???
-- ???
+**Secondary Search Fields:**
+- `Artist`
+- `Duration_ms`
 
 ## Indexing Strategy
 
-Para permitir búsquedas rápidas se implementará una tabla hash.
+Para permitir búsquedas rápidas se implementará una **tabla hash**.
 
-La clave principal será:
+La clave principal será el campo **Title**. La función hash generará una posición en una estructura de índice que apunta al **offset** (posición en bytes) del registro dentro del archivo CSV.
 
-???
-
-La función hash generará una posición en una estructura de índice que
-apunta al offset del registro dentro del archivo CSV.
-
-Esto permite acceder directamente al registro sin cargar el dataset completo en memoria.
+Esto permite acceder directamente al registro mediante un `seek` en el sistema de archivos, permitiendo realizar búsquedas en milisegundos sin cargar los gigabytes del dataset en la memoria RAM.
 
 ## Dataset Storage
 
 El dataset real se almacenará en:
+`data/raw/spotify_data.csv`
 
-data/raw/dataset.csv
+Debido a su tamaño (aprox. 1.26 GB comprimido / >5 GB descomprimido), el dataset no se incluye directamente en el repositorio de GitHub. Se recomienda descargarlo desde el enlace de Kaggle proporcionado arriba.
 
-Debido a su tamaño (>1GB), el dataset no se incluye en el repositorio.
-
-Para pruebas se utiliza un dataset reducido:
-
-data/sample/sample.csv
+Para pruebas de desarrollo se utiliza un dataset reducido con una muestra representativa:
+`data/sample/sample.csv`
 
 ## Dataset Size
 
-El dataset contiene aproximadamente ???  registros.
-
-El tamaño total del archivo es aproximadamente 27 GB.
+- **Registros:** El dataset contiene aproximadamente 26,000,000 de registros (estimado basado en la versión completa).
+- **Tamaño del archivo:** Aproximadamente **1.26 GB** (comprimido en ZIP) / El archivo original del que se derivó pesaba **27 GB**.
