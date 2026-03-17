@@ -92,32 +92,65 @@ typedef struct hash_node {
 
 Para el diseño detallado del módulo hash ver [HASH_DESIGN.md](HASH_DESIGN.md).
 
-### 3. csv_ui_viewer
+### 3. ui_process
 
-**Archivo:** `csv_ui_viewer.c`
+**Archivo:** `ui_process.c`
 
-**Responsabilidad:** Ser la interfaz de usuario por la cual se puede consultar y escribir algún registro al CSV.
+**Responsabilidad:** Ser la interfaz de usuario mediante la cual se puede buscar una canción o agregar un nuevo registro al CSV. Se comunica con `csv_process` mediante FIFOs nombrados.
 
 **Funciones expuestas:**
 
 | Función | Descripción |
 |---|---|
-| `trim(text)` | Elimina espacios y saltos de línea al inicio y final de un string |
-| `prompt(label, out, out_size)` | Muestra una etiqueta, lee la entrada del usuario y aplica trim |
-| `print_row(row)` | Imprime todos los campos de un registro `IpcRow` en pantalla |
-| `send_query(client, title, artist)` | Consulta un registro existente por título y artista opcional |
-| `send_append(client, row)` | Envía un nuevo registro para ser escrito en el CSV |
 | `print_menu()` | Imprime el menú de opciones en pantalla |
+| `option1(fdwrite, fdread)` | Solicita título y artista al usuario, envía la consulta al servidor y muestra el resultado |
+| `option2(fdwrite, fdread)` | Solicita todos los campos de un nuevo registro, los valida y los envía al servidor para inserción |
 
-**Estructura principal:**
+**Protocolo de comunicación:**
+
+El proceso envía primero un entero que identifica la operación y luego la estructura correspondiente:
 ```c
-IpcClient *client;   // Manejado por ipc_client.h — abstrae la comunicación con el servidor
+write(fdwrite, &identify, sizeof(int));  // 1 = buscar, 2 = insertar
+write(fdwrite, &query,    sizeof(Query)); // opcion 1
+write(fdwrite, &new_row,  sizeof(Row));   // opcion 2
 ```
 
-**Decisiones de diseño:**
+El servidor responde con una `Row` para búsquedas (con `id == -1` si no se encontró) o con un `int` de confirmación para inserciones.
 
-- La comunicación con el servidor se delega completamente a `ipc_client.h`, desacoplando la lógica de la UI del mecanismo de transporte subyacente.
-- El artista es un campo opcional en la búsqueda — si se deja vacío, el servidor busca solo por título.
-- Cualquier fallo de comunicación o error del servidor llama a `exit(-1)`, ya que continuar sin conexión activa no tiene sentido.
+### 4. utils
 
+**Archivos:** `utils.h`, `utils.c`
 
+**Responsabilidad:** Proveer funciones de uso general compartidas entre los módulos del sistema, principalmente validación de entrada del usuario y manipulación de strings.
+
+**Funciones expuestas:**
+
+| Función | Descripción |
+|---|---|
+| `trim(text)` | Elimina espacios, tabulaciones y saltos de línea al inicio y final de un string |
+| `prompt_text(label, out, max_size)` | Muestra una etiqueta, lee la entrada del usuario, aplica trim y retorna 0 si el usuario ingresó "0" para volver |
+| `valid_date(date)` | Valida que una fecha tenga formato YYYY-MM-DD con mes y día en rango válido |
+| `valid_explicit(explicito)` | Valida que el valor sea exactamente "True" o "False" |
+| `valid_positive_int(buff)` | Valida que el string represente un entero positivo |
+| `valid_positive_double(buff)` | Valida que el string represente un número decimal positivo con un solo punto |
+
+---
+
+### 5. common
+
+**Archivo:** `common.h`
+
+**Responsabilidad:** Centralizar las definiciones compartidas entre `ui_process` y `csv_process` para garantizar consistencia en la comunicación IPC.
+
+**Contenido:**
+```c
+#define FIFO_CLIENT_PATH "/tmp/client_fifo"
+#define FIFO_SERVER_PATH "/tmp/server_fifo"
+
+typedef struct {
+    char title[512];
+    char artist[1024];
+} Query;
+```
+
+Las rutas de los FIFOs se definen aquí para que ambos procesos usen exactamente las mismas sin duplicar constantes. La estructura `Query` define el formato del mensaje de búsqueda enviado de la UI al servidor.
