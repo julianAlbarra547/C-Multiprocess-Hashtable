@@ -76,12 +76,18 @@ void option1(int fdwrite, int fdread){
     write(fdwrite, &identify, sizeof(int));
     write(fdwrite, &query,    sizeof(Query));
 
-    Row result;
-    read(fdread, &result, sizeof(Row));
+    int count;
+    read(fdread, &count, sizeof(int));
 
-    if(result.id == -1){
+    if(count == -1){
         printf("NA - Cancion no encontrada.\n");
-    } else {
+        return;
+    }
+
+    Row result;
+
+    for(int i = 0; i < count; i++){
+        read(fdread, &result, sizeof(Row));
         print_row(&result);
     }
 }
