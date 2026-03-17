@@ -16,3 +16,5 @@ pero comprendidos y validados manualmente con datos reales.
   todas las búsquedas se ejecutan en menos de 2 segundos, comprueba
   insensibilidad a mayúsculas, manejo de títulos con múltiples artistas y
   que los offsets retornados apuntan a registros reales y legibles en el CSV.
+
+* **test_back.c** → Backend de prueba para verificar la comunicación entre procesos via FIFOs. Simula las respuestas del servidor sin necesidad de tener el índice hash construido. Cubre búsqueda exitosa de "Solitaria" de Alkilados, respuesta NA para canciones no encontradas, e inserción de un nuevo registro con confirmación.
