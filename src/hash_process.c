@@ -91,11 +91,25 @@ int main(){
 
             } else {
                 //Buscar por titulo y artista
-                
+                long offset = search_node(table, entries_file, query.title, query.artist);
+                if (offset == -1) {
+                    fprintf(stderr, "No entry found for Title='%s' and Artist='%s'\n", query.title, query.artist);
+                    continue;
+                }
+                Row *row;
+                row = read_csv(entries_file, offset);
+
+                if (write(fdwrite, row, sizeof(Row)) == -1) {
+                    perror("Error writing row to fifo");
+                    free(row);
+                    continue;
+                }
+                free(row);
             }
 
         } else if (identify == 2){
             // Agregar cancion
+            
         } else {
             fprintf(stderr, "Invalid identify value: %d\n", identify);
         }
